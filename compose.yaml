@@ -21,6 +21,7 @@ services:
             IGNITION_LOCAL_SITES_PATH: '${PWD}'
         volumes:
             - '.:/var/www/html'
+            - '${SSH_AUTH_SOCK:-/dev/null}:/tmp/ssh-auth.sock'
         networks:
             - sail
         depends_on:
