@@ -3,11 +3,14 @@
 namespace App\Plugins\Blog\Models;
 
 use App\Models\User;
+use App\Traits\HasSeoMetadata;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Post extends Model
 {
+    use HasSeoMetadata;
+
     protected $table = 'blog_posts';
     protected $guarded = [];
 

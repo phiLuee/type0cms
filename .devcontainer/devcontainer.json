@@ -9,9 +9,13 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
+				"bmewburn.vscode-intelephense-client",
+				"xdebug.php-pack",
+				"laravel.vscode-laravel",
+				"amiralizadeh9480.laravel-extra-intellisense",
+				"google.geminicodeassist"
 				// "laravel.vscode-laravel",
 				// "mikestead.dotenv",
-				// "amiralizadeh9480.laravel-extra-intellisense",
 				// "ryannaddy.laravel-artisan",
 				// "onecentlin.laravel5-snippets",
 				// "onecentlin.laravel-blade"
