@@ -22,7 +22,7 @@ trait HasSeoMetadata
      */
     public function updateSeo(array $attributes): void
     {
-        $this->seoMetadata()->updateOrCreate([], $attributes);
+        $this->seo()->updateOrCreate([], $attributes);
     }
 
     /**
@@ -30,7 +30,7 @@ trait HasSeoMetadata
      */
     public function getSeoTitle(): ?string
     {
-        return $this->seoMetadata?->meta_title
+        return $this->seo?->meta_title
             ?? $this->getAttribute('title')
             ?? $this->getAttribute('name');
     }
@@ -40,7 +40,7 @@ trait HasSeoMetadata
      */
     public function getSeoDescription(): ?string
     {
-        return $this->seoMetadata?->meta_description
+        return $this->seo?->meta_description
             ?? $this->getAttribute('excerpt');
     }
 }

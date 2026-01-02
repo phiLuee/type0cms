@@ -14,6 +14,11 @@ class Post extends Model
     protected $table = 'blog_posts';
     protected $guarded = [];
 
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
