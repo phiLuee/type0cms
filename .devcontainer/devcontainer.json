@@ -24,7 +24,7 @@
 		}
 	},
 	"remoteUser": "sail",
-	"postCreateCommand": "chown -R 1000:1000 /var/www/html 2>/dev/null || true",
+	"postCreateCommand": "chown -R 1000:1000 /var/www/html 2>/dev/null || true"
 	// "postStartCommand": "composer install && php artisan migrate --force",
 	// "initializeCommand": "docker run --rm -v ${localWorkspaceFolder}:/app composer install --ignore-platform-reqs || true"
 	// "forwardPorts": [],
