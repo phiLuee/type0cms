@@ -1,7 +1,8 @@
 <?php
 
 return [
+    App\Plugins\Blog\BlogServiceProvider::class,
     App\Providers\AppServiceProvider::class,
     App\Providers\Filament\AdminPanelProvider::class,
-    App\Plugins\Blog\BlogServiceProvider::class,
+    App\Providers\VoltServiceProvider::class,
 ];
