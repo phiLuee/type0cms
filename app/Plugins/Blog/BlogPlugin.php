@@ -17,6 +17,7 @@ class BlogPlugin implements Plugin
         $panel->resources([
             Resources\PostResource::class,
             Resources\CategoryResource::class,
+            Resources\TagResource\TagResource::class,
         ]);
     }
 

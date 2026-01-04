@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Plugins\Blog\Models;
 
 use App\Traits\HasSeoMetadata;

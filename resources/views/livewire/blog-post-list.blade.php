@@ -12,10 +12,10 @@ new class extends Component {
     public function with(): array
     {
         return [
-            'posts' => Post::with(['author', 'category'])
+            'posts' => Post::with(['author', 'category', 'tags'])
                 ->where('is_published', true)
                 ->latest('published_at')
-                ->paginate(12)
+                ->paginate(2)
         ];
     }
 }; ?>

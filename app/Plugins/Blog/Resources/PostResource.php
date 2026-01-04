@@ -59,6 +59,19 @@ class PostResource extends Resource
                                             ->required()
                                             ->unique('blog_categories', 'slug'),
                                     ]),
+                                Select::make('tags')
+                                    ->relationship('tags', 'name')
+                                    ->multiple()
+                                    ->preload()
+                                    ->createOptionForm([
+                                        TextInput::make('name')
+                                            ->required()
+                                            ->live(onBlur: true)
+                                            ->afterStateUpdated(fn ($state, callable $set) => $set('slug', Str::slug($state))),
+                                        TextInput::make('slug')
+                                            ->required()
+                                            ->unique('blog_tags', 'slug'),
+                                    ]),
                                 RichEditor::make('content')->columnSpanFull(),
                                 Toggle::make('is_published'),
                             ]),
@@ -87,6 +100,10 @@ class PostResource extends Resource
             ])->columns(3);
     }
 
+    /**
+     * @param Table $table
+     * @return Table
+     */
     public static function table(Table $table): Table
     {
         return $table
@@ -106,6 +123,9 @@ class PostResource extends Resource
             ]);
     }
 
+    /**
+     * @return array<string, class-string>
+     */
     public static function getPages(): array
     {
         return [
