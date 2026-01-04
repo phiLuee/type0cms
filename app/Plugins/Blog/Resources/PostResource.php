@@ -6,21 +6,24 @@ namespace App\Plugins\Blog\Resources;
 
 use App\Plugins\Blog\Models\Post;
 use App\Plugins\Blog\Resources\PostResource\Pages;
-use Filament\Forms;
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Group;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
+use BackedEnum;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
-use Filament\Actions\EditAction;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Tables;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
-use BackedEnum;
 use UnitEnum;
 
 
@@ -40,24 +43,24 @@ class PostResource extends Resource
                     ->schema([
                         Section::make('Inhalt')
                             ->schema([
-                                Forms\Components\TextInput::make('title')
+                                TextInput::make('title')
                                     ->required()
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(fn($state, callable $set) => $set('slug', Str::slug($state))),
-                                Forms\Components\TextInput::make('slug')->required()->unique(ignoreRecord: true),
-                                Forms\Components\Select::make('blog_category_id')
+                                TextInput::make('slug')->required()->unique(ignoreRecord: true),
+                                Select::make('blog_category_id')
                                     ->relationship('category', 'name')
                                     ->createOptionForm([
-                                        Forms\Components\TextInput::make('name')
+                                        TextInput::make('name')
                                             ->required()
                                             ->live(onBlur: true)
                                             ->afterStateUpdated(fn ($state, callable $set) => $set('slug', Str::slug($state))),
-                                        Forms\Components\TextInput::make('slug')
+                                        TextInput::make('slug')
                                             ->required()
                                             ->unique('blog_categories', 'slug'),
                                     ]),
-                                Forms\Components\RichEditor::make('content')->columnSpanFull(),
-                                Forms\Components\Toggle::make('is_published'),
+                                RichEditor::make('content')->columnSpanFull(),
+                                Toggle::make('is_published'),
                             ]),
                         Section::make('Suchmaschinen Optimierung (SEO)')
                             ->relationship('seo')
@@ -88,13 +91,14 @@ class PostResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('title')->searchable(),
-                Tables\Columns\TextColumn::make('category.name'),
-                Tables\Columns\IconColumn::make('is_published')->boolean(),
-                Tables\Columns\TextColumn::make('created_at')->dateTime(),
+                TextColumn::make('title')->searchable(),
+                TextColumn::make('category.name'),
+                IconColumn::make('is_published')->boolean(),
+                TextColumn::make('created_at')->dateTime(),
             ])
             ->filters([])
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
             ])
             ->toolbarActions([
@@ -107,6 +111,7 @@ class PostResource extends Resource
         return [
             'index' => Pages\ListPosts::route('/'),
             'create' => Pages\CreatePost::route('/create'),
+            'view' => Pages\ViewPost::route('/{record}'),
             'edit' => Pages\EditPost::route('/{record}/edit'),
         ];
     }
