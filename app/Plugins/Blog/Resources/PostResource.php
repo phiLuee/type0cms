@@ -48,7 +48,13 @@ class PostResource extends Resource
                                 Forms\Components\Select::make('blog_category_id')
                                     ->relationship('category', 'name')
                                     ->createOptionForm([
-                                        Forms\Components\TextInput::make('name')->required()
+                                        Forms\Components\TextInput::make('name')
+                                            ->required()
+                                            ->live(onBlur: true)
+                                            ->afterStateUpdated(fn ($state, callable $set) => $set('slug', Str::slug($state))),
+                                        Forms\Components\TextInput::make('slug')
+                                            ->required()
+                                            ->unique('blog_categories', 'slug'),
                                     ]),
                                 Forms\Components\RichEditor::make('content')->columnSpanFull(),
                                 Forms\Components\Toggle::make('is_published'),
@@ -56,15 +62,15 @@ class PostResource extends Resource
                         Section::make('Suchmaschinen Optimierung (SEO)')
                             ->relationship('seo')
                             ->schema([
-                                TextInput::make('title')
+                                TextInput::make('meta_title')
                                     ->label('Meta Titel')
                                     ->placeholder('Wird automatisch vom Beitragstitel übernommen, falls leer')
                                     ->maxLength(60),
-                                Textarea::make('description')
+                                Textarea::make('meta_description')
                                     ->label('Meta Beschreibung')
                                     ->rows(3)
                                     ->maxLength(160),
-                                FileUpload::make('image')
+                                FileUpload::make('og_image')
                                     ->label('Social Media Bild (OG Image)')
                                     ->image(),
                                 Toggle::make('no_index')

@@ -8,6 +8,11 @@ use App\Plugins\Blog\Models\Category;
 use App\Plugins\Blog\Resources\CategoryResource\Pages;
 use Filament\Forms;
 use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Toggle;
 use Filament\Actions\EditAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Resources\Resource;
@@ -29,11 +34,31 @@ class CategoryResource extends Resource
     {
         return $schema
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->live(onBlur: true)
-                    ->afterStateUpdated(fn($state, callable $set) => $set('slug', Str::slug($state))),
-                Forms\Components\TextInput::make('slug')->required()->unique(ignoreRecord: true),
+                Section::make('Kategorie')
+                    ->schema([
+                        Forms\Components\TextInput::make('name')
+                            ->required()
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(fn($state, callable $set) => $set('slug', Str::slug($state))),
+                        Forms\Components\TextInput::make('slug')->required()->unique(ignoreRecord: true),
+                    ]),
+                Section::make('Suchmaschinen Optimierung (SEO)')
+                    ->relationship('seo')
+                    ->schema([
+                        TextInput::make('meta_title')
+                            ->label('Meta Titel')
+                            ->placeholder('Wird automatisch vom Kategorienamen übernommen, falls leer')
+                            ->maxLength(60),
+                        Textarea::make('meta_description')
+                            ->label('Meta Beschreibung')
+                            ->rows(3)
+                            ->maxLength(160),
+                        FileUpload::make('og_image')
+                            ->label('Social Media Bild (OG Image)')
+                            ->image(),
+                        Toggle::make('no_index')
+                            ->label('Nicht in Suchmaschinen anzeigen (noindex)'),
+                    ])->collapsed(),
             ]);
     }
 
