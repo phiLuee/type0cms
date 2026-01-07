@@ -18,7 +18,7 @@
 				// "mikestead.dotenv",
 				// "ryannaddy.laravel-artisan",
 				// "onecentlin.laravel5-snippets",
-				// "onecentlin.laravel-blade"
+				// "onecentlin.laravel-blade" 
 			],
 			"settings": {}
 		}
@@ -32,8 +32,8 @@
 		}
 	},
 	"remoteUser": "sail",
-	"postCreateCommand": "sudo chown -R 1002:1002 /var/www/html 2>/dev/null || true"
-	// "postStartCommand": "composer install && php artisan migrate --force",
+	"postCreateCommand": "sudo chown -R ${WWWGROUP}:${WWWGROUP} /var/www/html 2>/dev/null || true",
+	"postStartCommand": "composer install && php artisan migrate --force"
 	// "initializeCommand": "docker run --rm -v ${localWorkspaceFolder}:/app composer install --ignore-platform-reqs || true"
 	// "forwardPorts": [],
 	// "runServices": [],
