@@ -23,7 +23,7 @@
 			"settings": {}
 		}
 	},
-	"features": {
+	"features": { 
 		"ghcr.io/devcontainers/features/git:1": {
 			"version": "latest"
 		},
@@ -32,7 +32,7 @@
 		}
 	},
 	"remoteUser": "sail",
-	"postCreateCommand": "sudo chown -R ${WWWGROUP}:${WWWGROUP} /var/www/html 2>/dev/null || true",
+	"postCreateCommand": "sudo chown -R ${WWWUSER}:${WWWGROUP} /var/www/html 2>/dev/null || true",
 	"postStartCommand": "composer install && php artisan migrate --force"
 	// "initializeCommand": "docker run --rm -v ${localWorkspaceFolder}:/app composer install --ignore-platform-reqs || true"
 	// "forwardPorts": [],
