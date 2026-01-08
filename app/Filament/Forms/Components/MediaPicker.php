@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Forms\Components;
 
 use Filament\Forms\Components\Field;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use App\Models\Media;
 
 class MediaPicker extends Field
 {

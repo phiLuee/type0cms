@@ -90,8 +90,12 @@ class MediaResource extends Resource
                 Tables\Columns\ImageColumn::make('preview')
                     ->label('Vorschau')
                     ->getStateUsing(function (Media $record) {
-                        if (str_starts_with($record->mime_type, 'image/')) {
-                            return $record->getUrl();
+                        try {
+                            if (str_starts_with($record->mime_type ?? '', 'image/')) {
+                                return $record->getUrl();
+                            }
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::error('Error getting media URL: ' . $e->getMessage());
                         }
                         return null;
                     })

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use App\Models\Media;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
 
@@ -65,7 +65,7 @@ class MediaService
     /**
      * Optimiert Bilder in einer Collection
      */
-    public function optimizeImages(string $collection = null): array
+    public function optimizeImages(?string $collection = null): array
     {
         $query = Media::where('mime_type', 'like', 'image/%');
 

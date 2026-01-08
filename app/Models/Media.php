@@ -17,4 +17,26 @@ class Media extends BaseMedia
     {
         return $this->hasMany(MediaReference::class, 'media_id');
     }
+
+    /**
+     * Override: Setze conversions_disk auf disk wenn null
+     * Verhindert Fehler beim Löschen von Medien ohne Conversions
+     */
+    public function getConversionsDiskAttribute($value)
+    {
+        return $value ?? $this->disk;
+    }
+
+    /**
+     * Override: Verhindere dass Conversions für ungebundene Medien geladen werden
+     */
+    public function getMediaConversionNames(): array
+    {
+        // Wenn kein Model gebunden ist, gibt es keine Conversions
+        if (empty($this->model_type)) {
+            return [];
+        }
+
+        return parent::getMediaConversionNames();
+    }
 }

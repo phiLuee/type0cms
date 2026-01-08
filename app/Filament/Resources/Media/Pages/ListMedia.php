@@ -62,7 +62,7 @@ class ListMedia extends ListRecords
                         $path = \Illuminate\Support\Facades\Storage::disk('public')->path($file);
 
                         if (file_exists($path)) {
-                            \Spatie\MediaLibrary\MediaCollections\Models\Media::create([
+                            \App\Models\Media::create([
                                 'model_type' => null,
                                 'model_id' => null,
                                 'name' => pathinfo($file, PATHINFO_FILENAME),
@@ -71,11 +71,11 @@ class ListMedia extends ListRecords
                                 'disk' => 'public',
                                 'collection_name' => $data['collection'],
                                 'size' => filesize($path),
-                                'manipulations' => [],
-                                'custom_properties' => [],
-                                'generated_conversions' => [],
-                                'responsive_images' => [],
-                                'uuid' => \Illuminate\Support\Str::uuid(),
+                                'manipulations' => '[]',
+                                'custom_properties' => '[]',
+                                'generated_conversions' => '[]',
+                                'responsive_images' => '[]',
+                                'uuid' => (string) \Illuminate\Support\Str::uuid(),
                                 'order_column' => 1,
                             ]);
 
@@ -158,7 +158,13 @@ class ListMedia extends ListRecords
                     $unusedMedia = $service->getTrulyUnusedMedia();
                     $count = $unusedMedia->count();
 
-                    $unusedMedia->each(fn($media) => $media->delete());
+                    foreach ($unusedMedia as $media) {
+                        try {
+                            $media->delete();
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::error('Failed to delete media: ' . $e->getMessage());
+                        }
+                    }
 
                     Notification::make()
                         ->success()
@@ -171,24 +177,31 @@ class ListMedia extends ListRecords
 
     public function getTabs(): array
     {
+        $model = static::getResource()::getModel();
+
         return [
-            'all' => Tab::make('Alle'),
+            'all' => Tab::make('Alle')
+                ->badge($model::count()),
+
             'images' => Tab::make('Bilder')
                 ->modifyQueryUsing(fn(Builder $query) => $query->where('mime_type', 'like', 'image/%'))
-                ->badge(static::getResource()::getModel()::where('mime_type', 'like', 'image/%')->count()),
+                ->badge($model::where('mime_type', 'like', 'image/%')->count()),
+
             'videos' => Tab::make('Videos')
                 ->modifyQueryUsing(fn(Builder $query) => $query->where('mime_type', 'like', 'video/%'))
-                ->badge(static::getResource()::getModel()::where('mime_type', 'like', 'video/%')->count()),
+                ->badge($model::where('mime_type', 'like', 'video/%')->count()),
+
             'documents' => Tab::make('Dokumente')
                 ->modifyQueryUsing(fn(Builder $query) => $query->where('mime_type', 'like', 'application/%'))
-                ->badge(static::getResource()::getModel()::where('mime_type', 'like', 'application/%')->count()),
+                ->badge($model::where('mime_type', 'like', 'application/%')->count()),
+
             'unused' => Tab::make('Wirklich ungenutzt')
                 ->modifyQueryUsing(
                     fn(Builder $query) =>
                     $query->whereNull('model_type')->whereDoesntHave('references')
                 )
                 ->badge(
-                    static::getResource()::getModel()::whereNull('model_type')
+                    $model::whereNull('model_type')
                         ->whereDoesntHave('references')
                         ->count()
                 )
