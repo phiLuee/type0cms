@@ -151,15 +151,19 @@ class ListMedia extends ListRecords
                 ->icon('heroicon-o-trash')
                 ->color('danger')
                 ->requiresConfirmation()
-                ->modalHeading('Ungenutzte Medien löschen')
-                ->modalDescription('Möchten Sie wirklich alle ungenutzten Medien löschen?')
+                ->modalHeading('Wirklich ungenutzte Medien löschen')
+                ->modalDescription('Löscht nur Medien, die weder an Models gebunden sind noch in Texten verwendet werden.')
                 ->action(function () {
-                    $count = static::getResource()::getModel()::whereNull('model_type')->count();
-                    static::getResource()::getModel()::whereNull('model_type')->each(fn($media) => $media->delete());
+                    $service = app(\App\Services\MediaService::class);
+                    $unusedMedia = $service->getTrulyUnusedMedia();
+                    $count = $unusedMedia->count();
+                    
+                    $unusedMedia->each(fn($media) => $media->delete());
+                    
                     Notification::make()
                         ->success()
                         ->title('Aufräumen erfolgreich')
-                        ->body("{$count} ungenutzte Medien wurden gelöscht.")
+                        ->body("{$count} wirklich ungenutzte Medien wurden gelöscht.")
                         ->send();
                 }),
         ];
@@ -178,9 +182,15 @@ class ListMedia extends ListRecords
             'documents' => Tab::make('Dokumente')
                 ->modifyQueryUsing(fn(Builder $query) => $query->where('mime_type', 'like', 'application/%'))
                 ->badge(static::getResource()::getModel()::where('mime_type', 'like', 'application/%')->count()),
-            'unused' => Tab::make('Ungenutzt')
-                ->modifyQueryUsing(fn(Builder $query) => $query->whereNull('model_type'))
-                ->badge(static::getResource()::getModel()::whereNull('model_type')->count())
+            'unused' => Tab::make('Wirklich ungenutzt')
+                ->modifyQueryUsing(fn(Builder $query) => 
+                    $query->whereNull('model_type')->whereDoesntHave('references')
+                )
+                ->badge(
+                    static::getResource()::getModel()::whereNull('model_type')
+                        ->whereDoesntHave('references')
+                        ->count()
+                )
                 ->badgeColor('danger'),
         ];
     }

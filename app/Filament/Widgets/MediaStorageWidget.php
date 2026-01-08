@@ -6,7 +6,7 @@ namespace App\Filament\Widgets;
 
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use App\Models\Media;
 
 class MediaStorageWidget extends BaseWidget
 {
@@ -18,8 +18,8 @@ class MediaStorageWidget extends BaseWidget
         $totalSize = (int) Media::sum('size');
         $imageCount = Media::where('mime_type', 'like', 'image/%')->count();
         $videoCount = Media::where('mime_type', 'like', 'video/%')->count();
-        $unusedCount = Media::whereNull('model_type')->count();
-        $unusedSize = (int) Media::whereNull('model_type')->sum('size');
+        $unusedCount = Media::whereNull('model_type')->whereDoesntHave('references')->count();
+        $unusedSize = (int) Media::whereNull('model_type')->whereDoesntHave('references')->sum('size');
 
         return [
             Stat::make('Gesamt-Medien', $totalCount)

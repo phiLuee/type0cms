@@ -17,7 +17,7 @@ use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Actions\DeleteAction;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use App\Models\Media;
 use App\Services\MediaService;
 use BackedEnum;
 use UnitEnum;
@@ -195,8 +195,11 @@ class MediaResource extends Resource
                     }),
 
                 Tables\Filters\Filter::make('unused')
-                    ->label('Ungenutzte Medien')
-                    ->query(fn(Builder $query) => $query->whereNull('model_type')),
+                    ->label('Wirklich ungenutzt')
+                    ->query(fn(Builder $query) => 
+                        $query->whereNull('model_type')
+                            ->whereDoesntHave('references')
+                    ),
 
                 Tables\Filters\Filter::make('created_at')
                     ->label('Zeitraum')

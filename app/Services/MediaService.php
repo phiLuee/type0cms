@@ -115,6 +115,40 @@ class MediaService
     }
 
     /**
+     * Gibt alle wirklich ungenutzten Medien zurück
+     * (Weder an Models gebunden noch via MediaReferences verwendet)
+     */
+    public function getTrulyUnusedMedia()
+    {
+        return Media::query()
+            ->whereNull('model_type')
+            ->whereDoesntHave('references')
+            ->get();
+    }
+
+    /**
+     * Anzahl der wirklich ungenutzten Medien
+     */
+    public function getTrulyUnusedCount(): int
+    {
+        return Media::query()
+            ->whereNull('model_type')
+            ->whereDoesntHave('references')
+            ->count();
+    }
+
+    /**
+     * Größe der wirklich ungenutzten Medien
+     */
+    public function getTrulyUnusedSize(): int
+    {
+        return (int) Media::query()
+            ->whereNull('model_type')
+            ->whereDoesntHave('references')
+            ->sum('size');
+    }
+
+    /**
      * Generiert einen Bericht über Medien-Nutzung
      */
     public function generateUsageReport(): array
@@ -149,8 +183,8 @@ class MediaService
                 ])
                 ->toArray(),
             'unused' => [
-                'count' => Media::whereNull('model_type')->count(),
-                'size' => Media::whereNull('model_type')->sum('size'),
+                'count' => $this->getTrulyUnusedCount(),
+                'size' => $this->getTrulyUnusedSize(),
             ],
             'oldest' => Media::orderBy('created_at', 'asc')->first(),
             'newest' => Media::orderBy('created_at', 'desc')->first(),

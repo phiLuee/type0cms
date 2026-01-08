@@ -124,6 +124,36 @@ $post2->addMedia($sameFile)->toMediaCollection('featured');
 
 ## Integration in Filament
 
+### PDFs und Medien im RichEditor verlinken
+
+Der `MediaRichEditor` bietet einen Button "Medium einfügen", mit dem du Medien aus der Mediathek direkt in den Text einfügen kannst:
+
+```php
+use App\Filament\Forms\Components\MediaRichEditor;
+
+MediaRichEditor::make('content')
+    ->label('Inhalt')
+    ->toolbarButtons([
+        'bold', 'italic', 'link', 'h2', 'h3',
+        'bulletList', 'orderedList', 'undo', 'redo',
+    ])
+    ->columnSpanFull()
+```
+
+**So funktioniert's:**
+1. Im RichEditor auf den Button "Medium einfügen" (📷) rechts oben klicken
+2. Medium aus der Mediathek auswählen (zeigt Vorschau)
+3. Bei PDFs/Dateien: Optional eigenen Link-Text eingeben (z.B. "Anleitung herunterladen")
+4. "Speichern" klicken - das Medium wird als Bild oder Link eingefügt
+
+**Ergebnisse:**
+- **Bilder**: Werden als `<img>` Tag direkt im Text angezeigt
+- **PDFs**: Werden als Link eingefügt: 📄 [Dein Text]
+- **Videos**: Werden als Link eingefügt: 🎥 [Dein Text]
+- **Andere**: Werden als Link eingefügt: 📎 [Dein Text]
+
+Alle Links öffnen sich in einem neuen Tab (`target="_blank"`).
+
 ### Für die zentrale Mediathek (HasMediaReferences)
 
 ```php

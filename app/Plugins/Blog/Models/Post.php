@@ -6,6 +6,7 @@ namespace App\Plugins\Blog\Models;
 
 use App\Models\User;
 use App\Traits\HasSeoMetadata;
+use App\Traits\HasMediaReferences;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Post extends Model
 {
     use HasSeoMetadata;
+    use HasMediaReferences;
 
     protected $table = 'blog_posts';
     protected $guarded = [];

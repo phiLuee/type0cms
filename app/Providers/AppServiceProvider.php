@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Observers\PostObserver;
+use App\Plugins\Blog\Models\Post;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Observer für automatische MediaReferences bei Content-Medien
+        Post::observe(PostObserver::class);
     }
 }
