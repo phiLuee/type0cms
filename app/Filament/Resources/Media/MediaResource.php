@@ -196,7 +196,8 @@ class MediaResource extends Resource
 
                 Tables\Filters\Filter::make('unused')
                     ->label('Wirklich ungenutzt')
-                    ->query(fn(Builder $query) => 
+                    ->query(
+                        fn(Builder $query) =>
                         $query->whereNull('model_type')
                             ->whereDoesntHave('references')
                     ),

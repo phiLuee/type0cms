@@ -34,10 +34,10 @@ class PostObserver
         }
 
         $processedIds = [];
-        
+
         foreach ($matches[1] as $filename) {
             $media = Media::where('file_name', $filename)->first();
-            
+
             if ($media && !in_array($media->id, $processedIds)) {
                 MediaReference::create([
                     'media_id' => $media->id,
@@ -45,7 +45,7 @@ class PostObserver
                     'model_id' => $post->id,
                     'collection_name' => 'content', // Spezielle Collection für Content-Medien
                 ]);
-                
+
                 $processedIds[] = $media->id;
             }
         }

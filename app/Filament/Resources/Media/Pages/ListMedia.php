@@ -157,9 +157,9 @@ class ListMedia extends ListRecords
                     $service = app(\App\Services\MediaService::class);
                     $unusedMedia = $service->getTrulyUnusedMedia();
                     $count = $unusedMedia->count();
-                    
+
                     $unusedMedia->each(fn($media) => $media->delete());
-                    
+
                     Notification::make()
                         ->success()
                         ->title('Aufräumen erfolgreich')
@@ -183,7 +183,8 @@ class ListMedia extends ListRecords
                 ->modifyQueryUsing(fn(Builder $query) => $query->where('mime_type', 'like', 'application/%'))
                 ->badge(static::getResource()::getModel()::where('mime_type', 'like', 'application/%')->count()),
             'unused' => Tab::make('Wirklich ungenutzt')
-                ->modifyQueryUsing(fn(Builder $query) => 
+                ->modifyQueryUsing(
+                    fn(Builder $query) =>
                     $query->whereNull('model_type')->whereDoesntHave('references')
                 )
                 ->badge(
