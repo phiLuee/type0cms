@@ -43,4 +43,12 @@ trait HasSeoMetadata
         return $this->seo?->meta_description
             ?? $this->getAttribute('excerpt');
     }
+
+    /**
+     * Gibt das OG Image zurück
+     */
+    public function getSeoOgImage(): ?string
+    {
+        return $this->seo?->getOgImageUrl();
+    }
 }

@@ -8,10 +8,12 @@
     "require": {
         "php": "^8.2",
         "filament/filament": "^4.0",
+        "filament/spatie-laravel-media-library-plugin": "^4.4",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "livewire/livewire": "*",
-        "livewire/volt": "*"
+        "livewire/volt": "*",
+        "spatie/laravel-medialibrary": "^11.17"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^3.6",

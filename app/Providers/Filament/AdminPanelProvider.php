@@ -40,7 +40,8 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
                 AccountWidget::class,
-                FilamentInfoWidget::class,
+                \App\Filament\Widgets\MediaStorageWidget::class,
+                \App\Filament\Widgets\MediaCollectionsWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

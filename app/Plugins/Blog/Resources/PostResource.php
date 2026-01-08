@@ -13,7 +13,9 @@ use Filament\Actions\ViewAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
+use App\Filament\Forms\Components\MediaRichEditor;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
@@ -54,7 +56,7 @@ class PostResource extends Resource
                                         TextInput::make('name')
                                             ->required()
                                             ->live(onBlur: true)
-                                            ->afterStateUpdated(fn ($state, callable $set) => $set('slug', Str::slug($state))),
+                                            ->afterStateUpdated(fn($state, callable $set) => $set('slug', Str::slug($state))),
                                         TextInput::make('slug')
                                             ->required()
                                             ->unique('blog_categories', 'slug'),
@@ -67,12 +69,29 @@ class PostResource extends Resource
                                         TextInput::make('name')
                                             ->required()
                                             ->live(onBlur: true)
-                                            ->afterStateUpdated(fn ($state, callable $set) => $set('slug', Str::slug($state))),
+                                            ->afterStateUpdated(fn($state, callable $set) => $set('slug', Str::slug($state))),
                                         TextInput::make('slug')
                                             ->required()
                                             ->unique('blog_tags', 'slug'),
                                     ]),
-                                RichEditor::make('content')->columnSpanFull(),
+                                MediaRichEditor::make('content')
+                                    ->label('Inhalt')
+                                    ->toolbarButtons([
+                                        'bold',
+                                        'italic',
+                                        'underline',
+                                        'strike',
+                                        'link',
+                                        'h2',
+                                        'h3',
+                                        'bulletList',
+                                        'orderedList',
+                                        'blockquote',
+                                        'codeBlock',
+                                        'undo',
+                                        'redo',
+                                    ])
+                                    ->columnSpanFull(),
                                 Toggle::make('is_published'),
                             ]),
                         Section::make('Suchmaschinen Optimierung (SEO)')
@@ -86,9 +105,14 @@ class PostResource extends Resource
                                     ->label('Meta Beschreibung')
                                     ->rows(3)
                                     ->maxLength(160),
-                                FileUpload::make('og_image')
+                                SpatieMediaLibraryFileUpload::make('og_image')
                                     ->label('Social Media Bild (OG Image)')
-                                    ->image(),
+                                    ->collection('og_image')
+                                    ->image()
+                                    ->imageEditor()
+                                    ->responsiveImages()
+                                    ->conversion('og')
+                                    ->hint('Optimal: 1200x630px für Social Media'),
                                 Toggle::make('no_index')
                                     ->label('Nicht in Suchmaschinen anzeigen (noindex)'),
                             ])->collapsed(),
