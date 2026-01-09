@@ -9,13 +9,19 @@ use Livewire\WithPagination;
 new class extends Component {
     use WithPagination;
 
+    public ?int $category = null;
+    public string $search = '';
+
     public function with(): array
     {
         return [
-            'posts' => Post::with(['author', 'category', 'tags'])
-                ->where('is_published', true)
-                ->latest('published_at')
-                ->paginate(2)
+        'posts' => Post::query()
+            ->with(['author', 'category', 'tags'])
+            ->where('is_published', true)
+            ->when($this->category, fn($q) => $q->where('category_id', $this->category))
+            ->when($this->search, fn($q) => $q->where('title', 'like', "%{$this->search}%"))
+            ->latest('published_at')
+            ->paginate(6)
         ];
     }
 }; ?>

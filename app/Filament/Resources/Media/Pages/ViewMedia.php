@@ -80,6 +80,19 @@ class ViewMedia extends ViewRecord
                             ->view('filament.infolists.components.media-preview'),
                     ])
                     ->collapsible(),
+
+                Section::make('Verwendung')
+                    ->schema([
+                        ViewEntry::make('usage')
+                            ->view('filament.infolists.components.media-usage'),
+                    ])
+                    ->collapsible()
+                    ->collapsed(function ($record) {
+                        // Collapsed wenn weder direkte Bindung noch Referenzen existieren
+                        $hasDirectBinding = $record->model_type && $record->model_id;
+                        $hasReferences = $record->references()->count() > 0;
+                        return !$hasDirectBinding && !$hasReferences;
+                    }),
             ]);
     }
 

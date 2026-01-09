@@ -42,6 +42,29 @@ class MediaResource extends Resource
     {
         return $schema
             ->schema([
+                Forms\Components\Placeholder::make('usage_warning')
+                    ->label('')
+                    ->content(function ($record) {
+                        if (!$record) {
+                            return null;
+                        }
+
+                        $referencesCount = $record->references()->count();
+
+                        if ($referencesCount === 0) {
+                            return null;
+                        }
+
+                        $references = $record->references()->with('model')->get();
+                        $models = $references->pluck('model')->filter()->unique('id');
+                        $modelNames = $models->map(fn($m) => $m->title ?? $m->name ?? class_basename($m))->join(', ');
+
+                        return "⚠️ **Achtung:** Dieses Medium wird an {$referencesCount} Stelle(n) verwendet: {$modelNames}. Es kann nicht gelöscht werden, solange diese Referenzen bestehen.";
+                    })
+                    ->visible(fn($record) => $record && $record->references()->count() > 0)
+                    ->columnSpanFull()
+                    ->extraAttributes(['class' => 'text-warning-600 dark:text-warning-400 bg-warning-50 dark:bg-warning-950 p-4 rounded-lg border border-warning-200 dark:border-warning-800']),
+
                 Section::make('Dateiinformationen')
                     ->schema([
                         Forms\Components\TextInput::make('name')
@@ -142,13 +165,45 @@ class MediaResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('model_type')
-                    ->label('Verwendet von')
+                    ->label('Direkt gebunden')
                     ->formatStateUsing(
                         fn($state, Media $record) =>
-                        $state ? class_basename($state) : 'Nicht zugeordnet'
+                        $state ? class_basename($state) : 'Nicht gebunden'
                     )
                     ->badge()
                     ->color(fn($state) => $state ? 'success' : 'gray')
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('references_count')
+                    ->label('Referenzen')
+                    ->counts('references')
+                    ->badge()
+                    ->color(fn($state) => match (true) {
+                        $state === 0 => 'gray',
+                        $state <= 2 => 'warning',
+                        default => 'danger',
+                    })
+                    ->icon(fn($state) => $state > 0 ? 'heroicon-m-link' : null)
+                    ->tooltip(function (Media $record) {
+                        $count = $record->references()->count();
+                        if ($count === 0) {
+                            return 'Keine Referenzen - Medium kann gelöscht werden';
+                        }
+
+                        $references = $record->references()->with('model')->take(5)->get();
+                        $models = $references->pluck('model')->filter()->map(function ($model) {
+                            return class_basename($model) . ': ' . ($model->title ?? $model->name ?? 'ID ' . $model->id);
+                        })->join("\n");
+
+                        $tooltip = "{$count} " . ($count === 1 ? 'Verwendung' : 'Verwendungen') . ":\n" . $models;
+
+                        if ($count > 5) {
+                            $tooltip .= "\n... und " . ($count - 5) . " weitere";
+                        }
+
+                        return $tooltip;
+                    })
+                    ->sortable()
                     ->toggleable(),
 
                 Tables\Columns\TextColumn::make('created_at')
@@ -236,7 +291,21 @@ class MediaResource extends Resource
                 ViewAction::make(),
                 EditAction::make(),
                 DeleteAction::make()
-                    ->requiresConfirmation(),
+                    ->requiresConfirmation()
+                    ->before(function (Media $record, DeleteAction $action) {
+                        $referencesCount = $record->references()->count();
+
+                        if ($referencesCount > 0) {
+                            \Filament\Notifications\Notification::make()
+                                ->warning()
+                                ->title('Medium wird noch verwendet')
+                                ->body("Dieses Medium wird noch an {$referencesCount} Stelle(n) referenziert (z.B. im Text-Editor). Es kann nicht gelöscht werden.")
+                                ->persistent()
+                                ->send();
+
+                            $action->cancel();
+                        }
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -281,7 +350,28 @@ class MediaResource extends Resource
 
                     DeleteBulkAction::make()
                         ->requiresConfirmation()
-                        ->modalDescription('Achtung: Die Medien werden dauerhaft gelöscht und können nicht wiederhergestellt werden.'),
+                        ->modalDescription('Achtung: Die Medien werden dauerhaft gelöscht und können nicht wiederhergestellt werden.')
+                        ->before(function ($records, DeleteBulkAction $action) {
+                            $protectedMedia = [];
+
+                            foreach ($records as $record) {
+                                $referencesCount = $record->references()->count();
+                                if ($referencesCount > 0) {
+                                    $protectedMedia[] = "{$record->name} ({$referencesCount} Referenz(en))";
+                                }
+                            }
+
+                            if (!empty($protectedMedia)) {
+                                \Filament\Notifications\Notification::make()
+                                    ->warning()
+                                    ->title('Einige Medien werden noch verwendet')
+                                    ->body('Folgende Medien können nicht gelöscht werden, da sie noch referenziert werden: ' . implode(', ', $protectedMedia))
+                                    ->persistent()
+                                    ->send();
+
+                                $action->cancel();
+                            }
+                        }),
                 ]),
             ])
             ->defaultSort('created_at', 'desc')
