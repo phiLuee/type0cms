@@ -1,18 +1,11 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Livewire\Volt\Volt;
 use App\Plugins\Blog\Models\Post;
 
-Route::get('/', function () {
-    return view('index');
-});
+// Homepage - Volt Page
+Volt::route('/', 'pages.home')->name('home');
 
-// Blog Post Detailseite
-Route::get('/blog/{post:slug}', function (Post $post) {
-    // Nur veröffentlichte Posts anzeigen
-    if (!$post->is_published) {
-        abort(404);
-    }
-
-    return view('blog.show', compact('post'));
-})->name('blog.show');
+// Blog Post Detailseite - Volt Page
+Volt::route('/blog/{post:slug}', 'pages.blog.show')->name('blog.show');
