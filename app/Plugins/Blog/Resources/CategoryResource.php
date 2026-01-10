@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace App\Plugins\Blog\Resources;
 
+use App\Filament\Forms\SeoFormSchema;
 use App\Plugins\Blog\Models\Category;
 use App\Plugins\Blog\Resources\CategoryResource\Pages;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Toggle;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Actions\DeleteBulkAction;
@@ -42,23 +40,7 @@ class CategoryResource extends Resource
                             ->afterStateUpdated(fn($state, callable $set) => $set('slug', Str::slug($state))),
                         TextInput::make('slug')->required()->unique(ignoreRecord: true),
                     ]),
-                Section::make('Suchmaschinen Optimierung (SEO)')
-                    ->relationship('seo')
-                    ->schema([
-                        TextInput::make('meta_title')
-                            ->label('Meta Titel')
-                            ->placeholder('Wird automatisch vom Kategorienamen übernommen, falls leer')
-                            ->maxLength(60),
-                        Textarea::make('meta_description')
-                            ->label('Meta Beschreibung')
-                            ->rows(3)
-                            ->maxLength(160),
-                        FileUpload::make('og_image')
-                            ->label('Social Media Bild (OG Image)')
-                            ->image(),
-                        Toggle::make('no_index')
-                            ->label('Nicht in Suchmaschinen anzeigen (noindex)'),
-                    ])->collapsed(),
+                SeoFormSchema::make(),
             ]);
     }
 

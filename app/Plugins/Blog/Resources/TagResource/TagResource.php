@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace App\Plugins\Blog\Resources\TagResource;
 
+use App\Filament\Forms\SeoFormSchema;
 use App\Plugins\Blog\Models\Tag;
 use App\Plugins\Blog\Resources\TagResource\Pages;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Schemas\Components\Section;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
-use Filament\Forms\Components\FileUpload;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\ColorColumn;
@@ -51,23 +49,7 @@ class TagResource extends Resource
                             ->label('Farbe (optional)')
                             ->helperText('Wird für die Darstellung von Tag-Badges verwendet'),
                     ]),
-                Section::make('Suchmaschinen Optimierung (SEO)')
-                    ->relationship('seo')
-                    ->schema([
-                        TextInput::make('meta_title')
-                            ->label('Meta Titel')
-                            ->placeholder('Wird automatisch vom Tag-Namen übernommen, falls leer')
-                            ->maxLength(60),
-                        Textarea::make('meta_description')
-                            ->label('Meta Beschreibung')
-                            ->rows(3)
-                            ->maxLength(160),
-                        FileUpload::make('og_image')
-                            ->label('Social Media Bild (OG Image)')
-                            ->image(),
-                        Toggle::make('no_index')
-                            ->label('Nicht in Suchmaschinen anzeigen (noindex)'),
-                    ])->collapsed(),
+                SeoFormSchema::make(),
             ]);
     }
 
