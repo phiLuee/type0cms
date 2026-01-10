@@ -18,6 +18,13 @@ class SeoObserver
      */
     public function saving(SeoMetadata $seo): void
     {
+        Log::info('SeoObserver: saving called', [
+            'seo_id' => $seo->id,
+            'has_og_image' => isset($seo->og_image),
+            'og_image_value' => $seo->og_image ?? 'NOT SET',
+            'attributes' => array_keys($seo->getAttributes()),
+        ]);
+
         // Prüfe ob og_image gesetzt ist
         if (isset($seo->og_image)) {
             $value = $seo->og_image;
@@ -31,11 +38,11 @@ class SeoObserver
                 // Speichere Upload-Pfad im static Array
                 self::$pendingUploads[$seo->id ?? 'new'] = $value;
             }
-
-            // WICHTIG: Entferne og_image IMMER aus den Attributen,
-            // da es keine DB-Spalte gibt
-            unset($seo->og_image);
         }
+
+        // WICHTIG: Entferne og_image IMMER aus den Attributen,
+        // da es keine DB-Spalte gibt - auch wenn nicht gesetzt
+        unset($seo->og_image);
     }
 
     /**

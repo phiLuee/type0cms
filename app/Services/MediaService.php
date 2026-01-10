@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Media;
+use App\Models\MediaReference;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
- * Service für Upload, Verwaltung und Löschung von Medien
+ * Service für Upload, Verwaltung, Referenzierung und Löschung von Medien
  */
 class MediaService
 {
@@ -80,7 +82,7 @@ class MediaService
     }
 
     /**
-     * Verschiebe Datei aus temp-uploads Verzeichnis in die Media-Sammlung
+     * VerschiebeDatei aus temp-uploads Verzeichnis in die Media-Sammlung
      * und erstelle Media-Eintrag.
      *
      * @param string $temporaryPath Relativer Pfad im Disk (z.B. "temp-uploads/abc.jpg")
@@ -240,5 +242,88 @@ class MediaService
         $zip->close();
 
         return $zipPath;
+    }
+
+    /**
+     * Synchronisiert MediaReferences für HTML Content
+     * Findet alle Media-URLs im Content und erstellt entsprechende References
+     *
+     * @param Model $model Das Model (z.B. Post)
+     * @param string $content HTML Content
+     * @param string $collection Collection-Name (z.B. 'content')
+     * @return int Anzahl synchronisierter Medien
+     */
+    public function syncContentMedia(Model $model, string $content, string $collection = 'content'): int
+    {
+        // Lösche alte Referenzen für diese Collection
+        MediaReference::where('model_type', get_class($model))
+            ->where('model_id', $model->id)
+            ->where('collection_name', $collection)
+            ->delete();
+
+        // Finde alle Media-URLs im Content
+        preg_match_all('/\/storage\/media\/([^"\'>\s]+)/', $content, $matches);
+
+        if (empty($matches[1])) {
+            return 0;
+        }
+
+        $processedIds = [];
+
+        foreach ($matches[1] as $filename) {
+            $path = 'media/' . $filename;
+            $media = Media::where('path', $path)->first();
+
+            if ($media && !in_array($media->id, $processedIds, true)) {
+                MediaReference::create([
+                    'media_id' => $media->id,
+                    'model_type' => get_class($model),
+                    'model_id' => $model->id,
+                    'collection_name' => $collection,
+                ]);
+
+                $processedIds[] = $media->id;
+            }
+        }
+
+        return count($processedIds);
+    }
+
+    /**
+     * Löscht alle MediaReferences für ein Model
+     *
+     * @param Model $model
+     * @param string|null $collection Optional: nur für bestimmte Collection
+     * @return int Anzahl gelöschter References
+     */
+    public function deleteAllReferences(Model $model, ?string $collection = null): int
+    {
+        $query = MediaReference::where('model_type', get_class($model))
+            ->where('model_id', $model->id);
+
+        if ($collection) {
+            $query->where('collection_name', $collection);
+        }
+
+        return $query->delete();
+    }
+
+    /**
+     * Hole alle Media-Objekte für ein Model
+     *
+     * @param Model $model
+     * @param string|null $collection
+     * @return \Illuminate\Support\Collection
+     */
+    public function getMedia(Model $model, ?string $collection = null)
+    {
+        $query = MediaReference::where('model_type', get_class($model))
+            ->where('model_id', $model->id);
+
+        if ($collection) {
+            $query->where('collection_name', $collection);
+        }
+
+        return $query->with('media')->get()->pluck('media');
     }
 }
