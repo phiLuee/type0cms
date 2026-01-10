@@ -4,12 +4,23 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Events\Media\MediaDeleted;
+use App\Events\Media\MediaReferencesSynced;
+use App\Events\Media\MediaUploaded;
+use App\Exceptions\Media\InvalidMediaFileException;
+use App\Exceptions\Media\MediaInUseException;
+use App\Exceptions\Media\MediaNotFoundException;
+use App\Exceptions\Media\MediaStorageException;
 use App\Models\Media;
 use App\Models\MediaReference;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use ZipArchive;
 
 /**
  * Service für Upload, Verwaltung, Referenzierung und Löschung von Medien
@@ -17,7 +28,40 @@ use Illuminate\Support\Str;
 class MediaService
 {
     /**
+     * Erlaubte MIME-Typen für Sicherheit
+     */
+    private function getAllowedMimeTypes(): array
+    {
+        return config('media.allowed_mime_types', [
+            // Images
+            'image/jpeg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+            'image/svg+xml',
+            // Documents
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            // Videos
+            'video/mp4',
+            'video/webm',
+            'video/ogg',
+        ]);
+    }
+
+    /**
+     * Maximale Dateigröße in Bytes
+     */
+    private function getMaxFileSize(): int
+    {
+        return config('media.max_file_size', 50 * 1024 * 1024);
+    }
+    /**
      * Lade eine Datei hoch und erstelle Media-Eintrag
+     *
+     * @throws InvalidMediaFileException
+     * @throws MediaStorageException
      */
     public function uploadFile(
         UploadedFile $file,
@@ -25,28 +69,87 @@ class MediaService
         string $disk = 'public',
         array $metadata = []
     ): Media {
+        // Validierung
+        $this->validateFile($file);
+
         // Generiere eindeutigen Dateinamen
         $extension = $file->getClientOriginalExtension();
         $fileName = Str::ulid() . '.' . $extension;
 
-        // Speichere Datei
-        $path = $file->storeAs('media', $fileName, $disk);
+        try {
+            return DB::transaction(function () use ($file, $fileName, $disk, $collection, $metadata) {
+                // Speichere Datei
+                $path = $file->storeAs('media', $fileName, $disk);
 
-        // Erstelle Media-Eintrag
-        return Media::create([
-            'name' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
-            'file_name' => $file->getClientOriginalName(),
-            'disk' => $disk,
-            'path' => $path,
-            'mime_type' => $file->getMimeType(),
-            'size' => $file->getSize(),
-            'collection_name' => $collection,
-            'metadata' => $metadata,
-        ]);
+                if (!$path) {
+                    throw MediaStorageException::uploadFailed('Storage returned false');
+                }
+
+                // Erstelle Media-Eintrag
+                $media = Media::create([
+                    'name' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+                    'file_name' => $file->getClientOriginalName(),
+                    'disk' => $disk,
+                    'path' => $path,
+                    'mime_type' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                    'collection_name' => $collection,
+                    'metadata' => $metadata,
+                ]);
+
+                // Event dispatchen
+                MediaUploaded::dispatch($media, $collection);
+
+                Log::info('Media uploaded successfully', [
+                    'media_id' => $media->id,
+                    'file_name' => $media->file_name,
+                    'collection' => $collection,
+                ]);
+
+                return $media;
+            });
+        } catch (\Exception $e) {
+            // Cleanup bei Fehler
+            if (isset($path) && Storage::disk($disk)->exists($path)) {
+                Storage::disk($disk)->delete($path);
+            }
+
+            Log::error('Media upload failed', [
+                'file_name' => $file->getClientOriginalName(),
+                'error' => $e->getMessage(),
+            ]);
+
+            throw MediaStorageException::uploadFailed($e->getMessage());
+        }
+    }
+
+    /**
+     * Validiere Upload-Datei
+     *
+     * @throws InvalidMediaFileException
+     */
+    private function validateFile(UploadedFile $file): void
+    {
+        // Prüfe MIME-Type
+        $mimeType = $file->getMimeType();
+        $allowedMimeTypes = $this->getAllowedMimeTypes();
+
+        if (!in_array($mimeType, $allowedMimeTypes, true)) {
+            throw InvalidMediaFileException::invalidMimeType($mimeType, $allowedMimeTypes);
+        }
+
+        // Prüfe Dateigröße
+        $maxFileSize = $this->getMaxFileSize();
+        if ($file->getSize() > $maxFileSize) {
+            throw InvalidMediaFileException::fileTooLarge($file->getSize(), $maxFileSize);
+        }
     }
 
     /**
      * Erstelle Media-Eintrag aus existierender Datei (z.B. aus temp-uploads)
+     *
+     * @throws InvalidMediaFileException
+     * @throws MediaStorageException
      */
     public function createFromExisting(
         string $sourcePath,
@@ -54,31 +157,62 @@ class MediaService
         string $collection = 'default',
         ?string $originalName = null,
         array $metadata = []
-    ): ?Media {
+    ): Media {
         if (!Storage::disk($sourceDisk)->exists($sourcePath)) {
-            return null;
+            throw InvalidMediaFileException::fileNotFound($sourcePath);
         }
 
         // Generiere neuen Dateinamen
         $originalFileName = $originalName ?? basename($sourcePath);
         $extension = pathinfo($originalFileName, PATHINFO_EXTENSION);
         $newFileName = Str::ulid() . '.' . $extension;
-
-        // Verschiebe in media Verzeichnis
         $newPath = 'media/' . $newFileName;
-        Storage::disk($sourceDisk)->move($sourcePath, $newPath);
 
-        // Erstelle Media-Eintrag
-        return Media::create([
-            'name' => pathinfo($originalFileName, PATHINFO_FILENAME),
-            'file_name' => $originalFileName,
-            'disk' => $sourceDisk,
-            'path' => $newPath,
-            'mime_type' => Storage::disk($sourceDisk)->mimeType($newPath),
-            'size' => Storage::disk($sourceDisk)->size($newPath),
-            'collection_name' => $collection,
-            'metadata' => $metadata,
-        ]);
+        try {
+            return DB::transaction(function () use ($sourcePath, $sourceDisk, $newPath, $originalFileName, $collection, $metadata) {
+                // Verschiebe in media Verzeichnis
+                if (!Storage::disk($sourceDisk)->move($sourcePath, $newPath)) {
+                    throw MediaStorageException::moveFailed($sourcePath, $newPath);
+                }
+
+                // Erstelle Media-Eintrag
+                $media = Media::create([
+                    'name' => pathinfo($originalFileName, PATHINFO_FILENAME),
+                    'file_name' => $originalFileName,
+                    'disk' => $sourceDisk,
+                    'path' => $newPath,
+                    'mime_type' => Storage::disk($sourceDisk)->mimeType($newPath),
+                    'size' => Storage::disk($sourceDisk)->size($newPath),
+                    'collection_name' => $collection,
+                    'metadata' => $metadata,
+                ]);
+
+                MediaUploaded::dispatch($media, $collection);
+
+                Log::info('Media created from existing file', [
+                    'media_id' => $media->id,
+                    'source_path' => $sourcePath,
+                ]);
+
+                return $media;
+            });
+        } catch (\Exception $e) {
+            // Rollback: Versuche Datei zurückzubewegen wenn möglich
+            if (Storage::disk($sourceDisk)->exists($newPath)) {
+                Storage::disk($sourceDisk)->move($newPath, $sourcePath);
+            }
+
+            Log::error('Failed to create media from existing file', [
+                'source_path' => $sourcePath,
+                'error' => $e->getMessage(),
+            ]);
+
+            if ($e instanceof MediaStorageException) {
+                throw $e;
+            }
+
+            throw MediaStorageException::moveFailed($sourcePath, $newPath);
+        }
     }
 
     /**
@@ -89,14 +223,16 @@ class MediaService
      * @param string $collection Ziel-Collection (default: 'media')
      * @param string|null $description Optionale Beschreibung
      * @param string $sourceDisk Disk, auf der die Datei liegt
-     * @return Media|null
+     * @return Media
+     * @throws InvalidMediaFileException
+     * @throws MediaStorageException
      */
     public function moveFromTemporaryUpload(
         string $temporaryPath,
         string $collection = 'media',
         ?string $description = null,
         string $sourceDisk = 'public'
-    ): ?Media {
+    ): Media {
         return $this->createFromExisting(
             $temporaryPath,
             $sourceDisk,
@@ -107,10 +243,31 @@ class MediaService
 
     /**
      * Lösche Medium (nur wenn nicht in Verwendung)
+     *
+     * @throws MediaInUseException
      */
     public function deleteMedia(Media $media): bool
     {
-        return $media->deleteWithFile();
+        if ($media->isInUse()) {
+            throw new MediaInUseException($media);
+        }
+
+        $mediaId = $media->id;
+        $fileName = $media->file_name;
+        $collection = $media->collection_name;
+
+        $deleted = $media->deleteWithFile();
+
+        if ($deleted) {
+            MediaDeleted::dispatch($mediaId, $fileName, $collection);
+
+            Log::info('Media deleted successfully', [
+                'media_id' => $mediaId,
+                'file_name' => $fileName,
+            ]);
+        }
+
+        return $deleted;
     }
 
     /**
@@ -124,10 +281,20 @@ class MediaService
 
         $deleted = 0;
         foreach ($unusedMedia as $media) {
-            if ($media->deleteWithFile()) {
-                $deleted++;
+            try {
+                if ($media->deleteWithFile()) {
+                    MediaDeleted::dispatch($media->id, $media->file_name, $media->collection_name);
+                    $deleted++;
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to delete unused media', [
+                    'media_id' => $media->id,
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
+
+        Log::info('Deleted unused media', ['count' => $deleted]);
 
         return $deleted;
     }
@@ -135,7 +302,7 @@ class MediaService
     /**
      * Hole alle ungenutzten Medien
      */
-    public function getUnusedMedia()
+    public function getUnusedMedia(): Collection
     {
         return Media::query()
             ->whereDoesntHave('references')
@@ -215,10 +382,12 @@ class MediaService
 
     /**
      * Erstelle ZIP-Archiv aus Medien
+     *
+     * @throws MediaStorageException
      */
     public function createZipArchive(array $mediaIds, string $zipName): string
     {
-        $zip = new \ZipArchive();
+        $zip = new ZipArchive();
         $zipPath = storage_path('app/temp/' . $zipName);
 
         // Erstelle temp Verzeichnis falls nicht vorhanden
@@ -226,22 +395,45 @@ class MediaService
             mkdir(storage_path('app/temp'), 0755, true);
         }
 
-        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-            throw new \Exception('Could not create ZIP archive');
+        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            throw MediaStorageException::zipCreationFailed('Could not open ZIP file');
         }
 
-        $media = Media::whereIn('id', $mediaIds)->get();
+        try {
+            $media = Media::whereIn('id', $mediaIds)->get();
 
-        foreach ($media as $mediaItem) {
-            $filePath = Storage::disk($mediaItem->disk)->path($mediaItem->path);
-            if (file_exists($filePath)) {
-                $zip->addFile($filePath, $mediaItem->file_name);
+            if ($media->isEmpty()) {
+                throw MediaStorageException::zipCreationFailed('No media found for given IDs');
             }
+
+            foreach ($media as $mediaItem) {
+                $filePath = Storage::disk($mediaItem->disk)->path($mediaItem->path);
+                if (file_exists($filePath)) {
+                    $zip->addFile($filePath, $mediaItem->file_name);
+                }
+            }
+
+            $zip->close();
+
+            Log::info('ZIP archive created', [
+                'zip_name' => $zipName,
+                'media_count' => $media->count(),
+            ]);
+
+            return $zipPath;
+        } catch (\Exception $e) {
+            $zip->close();
+            if (file_exists($zipPath)) {
+                unlink($zipPath);
+            }
+
+            Log::error('ZIP archive creation failed', [
+                'zip_name' => $zipName,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw MediaStorageException::zipCreationFailed($e->getMessage());
         }
-
-        $zip->close();
-
-        return $zipPath;
     }
 
     /**
@@ -255,38 +447,49 @@ class MediaService
      */
     public function syncContentMedia(Model $model, string $content, string $collection = 'content'): int
     {
-        // Lösche alte Referenzen für diese Collection
-        MediaReference::where('model_type', get_class($model))
-            ->where('model_id', $model->id)
-            ->where('collection_name', $collection)
-            ->delete();
+        return DB::transaction(function () use ($model, $content, $collection) {
+            // Lösche alte Referenzen für diese Collection
+            MediaReference::where('model_type', get_class($model))
+                ->where('model_id', $model->id)
+                ->where('collection_name', $collection)
+                ->delete();
 
-        // Finde alle Media-URLs im Content
-        preg_match_all('/\/storage\/media\/([^"\'>\s]+)/', $content, $matches);
+            // Finde alle Media-URLs im Content
+            preg_match_all('/\/storage\/media\/([^"\'>\s]+)/', $content, $matches);
 
-        if (empty($matches[1])) {
-            return 0;
-        }
-
-        $processedIds = [];
-
-        foreach ($matches[1] as $filename) {
-            $path = 'media/' . $filename;
-            $media = Media::where('path', $path)->first();
-
-            if ($media && !in_array($media->id, $processedIds, true)) {
-                MediaReference::create([
-                    'media_id' => $media->id,
-                    'model_type' => get_class($model),
-                    'model_id' => $model->id,
-                    'collection_name' => $collection,
-                ]);
-
-                $processedIds[] = $media->id;
+            if (empty($matches[1])) {
+                return 0;
             }
-        }
 
-        return count($processedIds);
+            $processedIds = [];
+
+            foreach ($matches[1] as $filename) {
+                $path = 'media/' . $filename;
+                $media = Media::where('path', $path)->first();
+
+                if ($media && !in_array($media->id, $processedIds, true)) {
+                    MediaReference::create([
+                        'media_id' => $media->id,
+                        'model_type' => get_class($model),
+                        'model_id' => $model->id,
+                        'collection_name' => $collection,
+                    ]);
+
+                    $processedIds[] = $media->id;
+                }
+            }
+
+            MediaReferencesSynced::dispatch($model, $collection, count($processedIds));
+
+            Log::info('Media references synced', [
+                'model_type' => get_class($model),
+                'model_id' => $model->id,
+                'collection' => $collection,
+                'count' => count($processedIds),
+            ]);
+
+            return count($processedIds);
+        });
     }
 
     /**
@@ -313,9 +516,9 @@ class MediaService
      *
      * @param Model $model
      * @param string|null $collection
-     * @return \Illuminate\Support\Collection
+     * @return Collection
      */
-    public function getMedia(Model $model, ?string $collection = null)
+    public function getMedia(Model $model, ?string $collection = null): Collection
     {
         $query = MediaReference::where('model_type', get_class($model))
             ->where('model_id', $model->id);
