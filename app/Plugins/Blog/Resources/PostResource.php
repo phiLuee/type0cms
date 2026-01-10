@@ -108,19 +108,13 @@ class PostResource extends Resource
                                     ->label('Social Media Bild (OG Image)')
                                     ->image()
                                     ->imageEditor()
-                                    ->directory('temp-uploads')
+                                    ->disk('public')
+                                    ->directory('livewire-tmp')
                                     ->maxSize(5120)
                                     ->hint('Optimal: 1200x630px für Social Media')
                                     ->helperText('Bild wird in die zentrale Mediathek übernommen')
-                                    ->afterStateHydrated(function (FileUpload $component, $state, $record) {
-                                        // Lade die URL aus MediaReference statt aus og_image Feld
-                                        if ($record && !$state) {
-                                            $media = $record->getFirstMedia('og_image');
-                                            if ($media) {
-                                                $component->state($media->getUrl());
-                                            }
-                                        }
-                                    }),
+                                    ->deletable(true)
+                                    ->openable(),
                                 Toggle::make('no_index')
                                     ->label('Nicht in Suchmaschinen anzeigen (noindex)'),
                             ])->collapsed(),

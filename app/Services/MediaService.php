@@ -80,6 +80,30 @@ class MediaService
     }
 
     /**
+     * Verschiebe Datei aus temp-uploads Verzeichnis in die Media-Sammlung
+     * und erstelle Media-Eintrag.
+     *
+     * @param string $temporaryPath Relativer Pfad im Disk (z.B. "temp-uploads/abc.jpg")
+     * @param string $collection Ziel-Collection (default: 'media')
+     * @param string|null $description Optionale Beschreibung
+     * @param string $sourceDisk Disk, auf der die Datei liegt
+     * @return Media|null
+     */
+    public function moveFromTemporaryUpload(
+        string $temporaryPath,
+        string $collection = 'media',
+        ?string $description = null,
+        string $sourceDisk = 'public'
+    ): ?Media {
+        return $this->createFromExisting(
+            $temporaryPath,
+            $sourceDisk,
+            $collection,
+            $description ?? basename($temporaryPath)
+        );
+    }
+
+    /**
      * Lösche Medium (nur wenn nicht in Verwendung)
      */
     public function deleteMedia(Media $media): bool

@@ -22,7 +22,7 @@ class ListMedia extends ListRecords
                 ->color('primary')
                 ->modalHeading('Neue Medien hochladen')
                 ->modalDescription('Laden Sie Bilder, Videos, Dokumente oder andere Dateien hoch.')
-                ->form([
+                ->schema([
                     \Filament\Forms\Components\FileUpload::make('files')
                         ->label('Dateien')
                         ->multiple()

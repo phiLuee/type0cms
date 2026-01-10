@@ -3,7 +3,6 @@
 namespace App\Plugins\Blog\Resources\PostResource\Pages;
 
 use App\Plugins\Blog\Resources\PostResource;
-use App\Services\MediaService;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
@@ -18,64 +17,51 @@ class EditPost extends EditRecord
         ];
     }
 
-    protected function afterSave(): void
+    protected function mutateFormDataBeforeFill(array $data): array
     {
-        // OG Image Upload verarbeiten
-        $this->handleOgImageUpload();
+        // Entferne og_image aus data, damit FileUpload leer startet
+        if (isset($data['seo'])) {
+            unset($data['seo']['og_image']);
+        }
+        
+        return $data;
     }
 
-    protected function handleOgImageUpload(): void
+    protected function mutateFormDataBeforeSave(array $data): array
     {
-        \Log::info('EditPost: handleOgImageUpload called', [
-            'has_data' => isset($this->data),
-            'has_seo_data' => isset($this->data['seo']),
+        \Log::info('EditPost: mutateFormDataBeforeSave', [
+            'has_seo' => isset($data['seo']),
+            'seo_keys' => isset($data['seo']) ? array_keys($data['seo']) : null,
+            'has_og_image' => isset($data['seo']['og_image']),
+            'og_image_value' => $data['seo']['og_image'] ?? null,
         ]);
-
-        // Zugriff auf SEO-Daten aus dem verschachtelten Formular
-        $seoData = $this->data['seo'] ?? [];
-        $ogImagePath = $seoData['og_image'] ?? null;
-
-        \Log::info('EditPost: og_image path', [
-            'path' => $ogImagePath,
-            'is_string' => is_string($ogImagePath),
-            'has_seo' => $this->record->seo !== null,
-        ]);
-
-        if (!$ogImagePath || !$this->record->seo) {
-            \Log::info('EditPost: Skipped - no path or no seo');
-            return;
+        
+        // Cache og_image Upload für afterSave
+        if (isset($data['seo']['og_image'])) {
+            $this->cachedOgImageUpload = $data['seo']['og_image'];
+            unset($data['seo']['og_image']);
         }
+        
+        return $data;
+    }
 
-        // Wenn es ein neues Upload ist (string path)
-        if (is_string($ogImagePath)) {
-            // Alte Referenz entfernen
-            $oldMedia = $this->record->seo->getFirstMedia('og_image');
-            if ($oldMedia) {
-                $this->record->seo->detachMedia($oldMedia, 'og_image');
-            }
-
-            // Erstelle Media aus Upload
-            $mediaService = app(MediaService::class);
-            $media = $mediaService->createFromExisting(
-                sourcePath: $ogImagePath,
-                sourceDisk: 'public',
-                collection: 'og_image',
-                originalName: basename($ogImagePath)
+    protected function afterSave(): void
+    {
+        \Log::info('EditPost: afterSave called', [
+            'has_cached' => isset($this->cachedOgImageUpload),
+            'cached_value' => $this->cachedOgImageUpload ?? 'NOT SET',
+        ]);
+        
+        // Verarbeite OG Image Upload via Model-Methode
+        if (isset($this->cachedOgImageUpload)) {
+            \Log::info('EditPost: Calling handleSeoOgImageUpload');
+            
+            $result = $this->record->handleSeoOgImageUpload(
+                $this->cachedOgImageUpload,
+                'Post OG Image: ' . $this->record->title
             );
-
-            if ($media) {
-                \Log::info('EditPost: Media created', ['media_id' => $media->id]);
-
-                // Verknüpfe mit SEO
-                $this->record->seo->attachMedia($media, 'og_image');
-
-                // Lösche og_image Wert aus seo_metadata (nicht mehr nötig)
-                $this->record->seo->update(['og_image' => null]);
-
-                \Log::info('EditPost: Media attached and og_image cleared');
-            } else {
-                \Log::warning('EditPost: Media creation failed', ['path' => $ogImagePath]);
-            }
+            
+            \Log::info('EditPost: handleSeoOgImageUpload result', ['success' => $result]);
         }
     }
 }

@@ -17,6 +17,7 @@ class SeoMetadata extends Model
     protected $fillable = [
         'meta_title',
         'meta_description',
+        'og_image',
         'no_index',
         'canonical_url',
     ];
