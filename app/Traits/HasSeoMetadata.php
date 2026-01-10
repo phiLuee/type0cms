@@ -9,8 +9,6 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 trait HasSeoMetadata
 {
-
-
     /**
      * Die polymorphe Beziehung zu den SEO-Metadaten.
      */

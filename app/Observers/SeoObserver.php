@@ -18,24 +18,23 @@ class SeoObserver
      */
     public function saving(SeoMetadata $seo): void
     {
-        // Prüfe ob og_image ein Upload ist (von FileUpload Feld)
-        if (isset($seo->og_image) && is_string($seo->og_image) && strlen($seo->og_image) > 0) {
-            // Prüfe ob es ein Livewire temporärer Upload ist
-            $isLivewireTemp = str_contains($seo->og_image, 'livewire-tmp');
+        // Prüfe ob og_image gesetzt ist
+        if (isset($seo->og_image)) {
+            $value = $seo->og_image;
 
-            Log::info('SeoObserver: og_image upload detected', [
-                'value' => $seo->og_image,
-                'is_livewire_temp' => $isLivewireTemp,
-            ]);
+            // Ist es ein String und ein Livewire Upload?
+            if (is_string($value) && strlen($value) > 0 && str_contains($value, 'livewire-tmp')) {
+                Log::info('SeoObserver: og_image upload detected', [
+                    'value' => $value,
+                ]);
 
-            // Nur wenn es ein temporärer Upload ist, verarbeiten
-            if ($isLivewireTemp) {
                 // Speichere Upload-Pfad im static Array
-                self::$pendingUploads[$seo->id ?? 'new'] = $seo->og_image;
-
-                // Entferne aus Attributen (wird nicht in DB gespeichert)
-                unset($seo->og_image);
+                self::$pendingUploads[$seo->id ?? 'new'] = $value;
             }
+
+            // WICHTIG: Entferne og_image IMMER aus den Attributen,
+            // da es keine DB-Spalte gibt
+            unset($seo->og_image);
         }
     }
 

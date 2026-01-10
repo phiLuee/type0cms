@@ -4,16 +4,14 @@ declare(strict_types=1);
 
 namespace App\Plugins\Blog\Resources;
 
+use App\Filament\Forms\SeoFormSchema;
 use App\Plugins\Blog\Models\Post;
 use App\Plugins\Blog\Resources\PostResource\Pages;
 use BackedEnum;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
-use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use App\Filament\Forms\Components\MediaRichEditor;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -93,31 +91,7 @@ class PostResource extends Resource
                                     ->columnSpanFull(),
                                 Toggle::make('is_published'),
                             ]),
-                        Section::make('Suchmaschinen Optimierung (SEO)')
-                            ->relationship('seo')
-                            ->schema([
-                                TextInput::make('meta_title')
-                                    ->label('Meta Titel')
-                                    ->placeholder('Wird automatisch vom Beitragstitel übernommen, falls leer')
-                                    ->maxLength(60),
-                                Textarea::make('meta_description')
-                                    ->label('Meta Beschreibung')
-                                    ->rows(3)
-                                    ->maxLength(160),
-                                FileUpload::make('og_image')
-                                    ->label('Social Media Bild (OG Image)')
-                                    ->image()
-                                    ->imageEditor()
-                                    ->disk('public')
-                                    ->directory('livewire-tmp')
-                                    ->maxSize(5120)
-                                    ->hint('Optimal: 1200x630px für Social Media')
-                                    ->helperText('Bild wird in die zentrale Mediathek übernommen')
-                                    ->deletable(true)
-                                    ->openable(),
-                                Toggle::make('no_index')
-                                    ->label('Nicht in Suchmaschinen anzeigen (noindex)'),
-                            ])->collapsed(),
+                        SeoFormSchema::make(),
                     ])->columnSpan(['lg' => 2]),
                 Group::make()
                     ->schema([
