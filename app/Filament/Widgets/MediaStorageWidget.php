@@ -18,8 +18,8 @@ class MediaStorageWidget extends BaseWidget
         $totalSize = (int) Media::sum('size');
         $imageCount = Media::where('mime_type', 'like', 'image/%')->count();
         $videoCount = Media::where('mime_type', 'like', 'video/%')->count();
-        $unusedCount = Media::whereNull('model_type')->whereDoesntHave('references')->count();
-        $unusedSize = (int) Media::whereNull('model_type')->whereDoesntHave('references')->sum('size');
+        $unusedCount = Media::whereDoesntHave('references')->count();
+        $unusedSize = (int) Media::whereDoesntHave('references')->sum('size');
 
         return [
             Stat::make('Gesamt-Medien', $totalCount)

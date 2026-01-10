@@ -164,16 +164,6 @@ class MediaResource extends Resource
                     ->formatStateUsing(fn($state) => self::formatBytes($state))
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('model_type')
-                    ->label('Direkt gebunden')
-                    ->formatStateUsing(
-                        fn($state, Media $record) =>
-                        $state ? class_basename($state) : 'Nicht gebunden'
-                    )
-                    ->badge()
-                    ->color(fn($state) => $state ? 'success' : 'gray')
-                    ->toggleable(),
-
                 Tables\Columns\TextColumn::make('references_count')
                     ->label('Referenzen')
                     ->counts('references')
@@ -254,11 +244,9 @@ class MediaResource extends Resource
                     }),
 
                 Tables\Filters\Filter::make('unused')
-                    ->label('Wirklich ungenutzt')
+                    ->label('Ungenutzt')
                     ->query(
-                        fn(Builder $query) =>
-                        $query->whereNull('model_type')
-                            ->whereDoesntHave('references')
+                        fn(Builder $query) => $query->whereDoesntHave('references')
                     ),
 
                 Tables\Filters\Filter::make('created_at')

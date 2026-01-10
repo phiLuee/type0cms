@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\HasMediaReferences;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Spatie\MediaLibrary\HasMedia;
-use Spatie\MediaLibrary\InteractsWithMedia;
 
-class SeoMetadata extends Model implements HasMedia
+class SeoMetadata extends Model
 {
-    use InteractsWithMedia;
+    use HasMediaReferences;
 
     protected $table = 'seo_metadata';
 
@@ -33,29 +32,11 @@ class SeoMetadata extends Model implements HasMedia
     }
 
     /**
-     * Register media collections
-     */
-    public function registerMediaCollections(): void
-    {
-        $this
-            ->addMediaCollection('og_image')
-            ->useDisk('public') // Wichtig: public disk verwenden
-            ->singleFile() // Nur ein OG Image pro SEO Record
-            ->registerMediaConversions(function () {
-                $this
-                    ->addMediaConversion('og')
-                    ->width(1200)
-                    ->height(630)
-                    ->format('webp')
-                    ->nonQueued();
-            });
-    }
-
-    /**
      * Hilfsmethode für OG Image URL
      */
-    public function getOgImageUrl(string $conversion = ''): ?string
+    public function getOgImageUrl(): ?string
     {
-        return $this->getFirstMediaUrl('og_image', $conversion);
+        $media = $this->getFirstMedia('og_image');
+        return $media?->getUrl();
     }
 }

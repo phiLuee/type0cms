@@ -5,190 +5,216 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Media;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use ZipArchive;
+use Illuminate\Support\Str;
 
+/**
+ * Service für Upload, Verwaltung und Löschung von Medien
+ */
 class MediaService
 {
     /**
-     * Erstellt ein ZIP-Archiv mit allen ausgewählten Medien
+     * Lade eine Datei hoch und erstelle Media-Eintrag
      */
-    public function createZipArchive(array $mediaIds, string $zipName = 'media.zip'): string
-    {
-        $zip = new ZipArchive();
-        $zipPath = storage_path('app/temp/' . $zipName);
+    public function uploadFile(
+        UploadedFile $file,
+        string $collection = 'default',
+        string $disk = 'public',
+        array $metadata = []
+    ): Media {
+        // Generiere eindeutigen Dateinamen
+        $extension = $file->getClientOriginalExtension();
+        $fileName = Str::ulid() . '.' . $extension;
 
-        // Stelle sicher, dass das temp-Verzeichnis existiert
-        if (!file_exists(dirname($zipPath))) {
-            mkdir(dirname($zipPath), 0755, true);
-        }
+        // Speichere Datei
+        $path = $file->storeAs('media', $fileName, $disk);
 
-        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            throw new \Exception('ZIP-Archiv konnte nicht erstellt werden');
-        }
-
-        $media = Media::whereIn('id', $mediaIds)->get();
-
-        foreach ($media as $medium) {
-            $filePath = Storage::disk($medium->disk)->path($medium->getPath());
-
-            if (file_exists($filePath)) {
-                // Füge die Datei mit einem eindeutigen Namen hinzu
-                $zipFileName = $medium->collection_name . '/' . $medium->file_name;
-                $zip->addFile($filePath, $zipFileName);
-            }
-        }
-
-        $zip->close();
-
-        return $zipPath;
+        // Erstelle Media-Eintrag
+        return Media::create([
+            'name' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+            'file_name' => $file->getClientOriginalName(),
+            'disk' => $disk,
+            'path' => $path,
+            'mime_type' => $file->getMimeType(),
+            'size' => $file->getSize(),
+            'collection_name' => $collection,
+            'metadata' => $metadata,
+        ]);
     }
 
     /**
-     * Bereinigt temporäre Dateien
+     * Erstelle Media-Eintrag aus existierender Datei (z.B. aus temp-uploads)
      */
-    public function cleanupTempFiles(): void
-    {
-        $tempPath = storage_path('app/temp');
-
-        if (file_exists($tempPath)) {
-            $files = glob($tempPath . '/*.zip');
-
-            foreach ($files as $file) {
-                if (file_exists($file) && time() - filemtime($file) > 3600) { // Älter als 1 Stunde
-                    unlink($file);
-                }
-            }
+    public function createFromExisting(
+        string $sourcePath,
+        string $sourceDisk = 'public',
+        string $collection = 'default',
+        ?string $originalName = null,
+        array $metadata = []
+    ): ?Media {
+        if (!Storage::disk($sourceDisk)->exists($sourcePath)) {
+            return null;
         }
+
+        // Generiere neuen Dateinamen
+        $originalFileName = $originalName ?? basename($sourcePath);
+        $extension = pathinfo($originalFileName, PATHINFO_EXTENSION);
+        $newFileName = Str::ulid() . '.' . $extension;
+
+        // Verschiebe in media Verzeichnis
+        $newPath = 'media/' . $newFileName;
+        Storage::disk($sourceDisk)->move($sourcePath, $newPath);
+
+        // Erstelle Media-Eintrag
+        return Media::create([
+            'name' => pathinfo($originalFileName, PATHINFO_FILENAME),
+            'file_name' => $originalFileName,
+            'disk' => $sourceDisk,
+            'path' => $newPath,
+            'mime_type' => Storage::disk($sourceDisk)->mimeType($newPath),
+            'size' => Storage::disk($sourceDisk)->size($newPath),
+            'collection_name' => $collection,
+            'metadata' => $metadata,
+        ]);
     }
 
     /**
-     * Optimiert Bilder in einer Collection
+     * Lösche Medium (nur wenn nicht in Verwendung)
      */
-    public function optimizeImages(?string $collection = null): array
+    public function deleteMedia(Media $media): bool
     {
-        $query = Media::where('mime_type', 'like', 'image/%');
-
-        if ($collection) {
-            $query->where('collection_name', $collection);
-        }
-
-        $media = $query->get();
-        $optimized = [];
-
-        foreach ($media as $medium) {
-            try {
-                // Hier könnte man eine Bild-Optimierungs-Library integrieren
-                // z.B. spatie/image-optimizer
-                $optimized[] = $medium->id;
-            } catch (\Exception $e) {
-                // Log error
-                continue;
-            }
-        }
-
-        return $optimized;
+        return $media->deleteWithFile();
     }
 
     /**
-     * Findet duplizierte Medien basierend auf Dateiname und Größe
+     * Lösche ungenutzte Medien
+     */
+    public function deleteUnusedMedia(): int
+    {
+        $unusedMedia = Media::query()
+            ->whereDoesntHave('references')
+            ->get();
+
+        $deleted = 0;
+        foreach ($unusedMedia as $media) {
+            if ($media->deleteWithFile()) {
+                $deleted++;
+            }
+        }
+
+        return $deleted;
+    }
+
+    /**
+     * Hole alle ungenutzten Medien
+     */
+    public function getUnusedMedia()
+    {
+        return Media::query()
+            ->whereDoesntHave('references')
+            ->get();
+    }
+
+    /**
+     * Hole Statistiken über Medien
+     */
+    public function getStatistics(): array
+    {
+        return [
+            'total_count' => Media::count(),
+            'total_size' => Media::sum('size'),
+            'unused_count' => Media::whereDoesntHave('references')->count(),
+            'unused_size' => Media::whereDoesntHave('references')->sum('size'),
+            'by_collection' => Media::query()
+                ->selectRaw('collection_name, count(*) as count, sum(size) as size')
+                ->groupBy('collection_name')
+                ->get()
+                ->keyBy('collection_name')
+                ->map(fn($item) => [
+                    'count' => $item->count,
+                    'size' => $item->size,
+                ])
+                ->toArray(),
+        ];
+    }
+
+    /**
+     * Finde duplizierte Medien (basierend auf Dateigröße und Namen)
      */
     public function findDuplicates(): array
     {
+        $media = Media::all();
         $duplicates = [];
 
-        $media = Media::selectRaw('file_name, size, GROUP_CONCAT(id) as ids, COUNT(*) as count')
-            ->groupBy(['file_name', 'size'])
-            ->having('count', '>', 1)
-            ->get();
+        $grouped = $media->groupBy(function ($item) {
+            return $item->size . '_' . $item->name;
+        });
 
-        foreach ($media as $item) {
-            $duplicates[] = [
-                'file_name' => $item->file_name,
-                'size' => $item->size,
-                'count' => $item->count,
-                'ids' => explode(',', $item->ids),
-            ];
+        foreach ($grouped as $key => $group) {
+            if ($group->count() > 1) {
+                $duplicates[] = [
+                    'key' => $key,
+                    'media' => $group,
+                ];
+            }
         }
 
         return $duplicates;
     }
 
     /**
-     * Gibt alle wirklich ungenutzten Medien zurück
-     * (Weder an Models gebunden noch via MediaReferences verwendet)
-     */
-    public function getTrulyUnusedMedia()
-    {
-        return Media::query()
-            ->whereNull('model_type')
-            ->whereDoesntHave('references')
-            ->get();
-    }
-
-    /**
-     * Anzahl der wirklich ungenutzten Medien
-     */
-    public function getTrulyUnusedCount(): int
-    {
-        return Media::query()
-            ->whereNull('model_type')
-            ->whereDoesntHave('references')
-            ->count();
-    }
-
-    /**
-     * Größe der wirklich ungenutzten Medien
-     */
-    public function getTrulyUnusedSize(): int
-    {
-        return (int) Media::query()
-            ->whereNull('model_type')
-            ->whereDoesntHave('references')
-            ->sum('size');
-    }
-
-    /**
-     * Generiert einen Bericht über Medien-Nutzung
+     * Generiere Nutzungsbericht
      */
     public function generateUsageReport(): array
     {
+        $media = Media::with('references.model')->get();
+
         return [
-            'total' => [
-                'count' => Media::count(),
-                'size' => Media::sum('size'),
-            ],
-            'by_type' => [
-                'images' => [
-                    'count' => Media::where('mime_type', 'like', 'image/%')->count(),
-                    'size' => Media::where('mime_type', 'like', 'image/%')->sum('size'),
-                ],
-                'videos' => [
-                    'count' => Media::where('mime_type', 'like', 'video/%')->count(),
-                    'size' => Media::where('mime_type', 'like', 'video/%')->sum('size'),
-                ],
-                'documents' => [
-                    'count' => Media::where('mime_type', 'like', 'application/%')->count(),
-                    'size' => Media::where('mime_type', 'like', 'application/%')->sum('size'),
-                ],
-            ],
-            'by_collection' => Media::selectRaw('collection_name, COUNT(*) as count, SUM(size) as size')
-                ->groupBy('collection_name')
-                ->get()
-                ->mapWithKeys(fn($item) => [
-                    $item->collection_name => [
-                        'count' => $item->count,
-                        'size' => $item->size,
-                    ]
-                ])
-                ->toArray(),
-            'unused' => [
-                'count' => $this->getTrulyUnusedCount(),
-                'size' => $this->getTrulyUnusedSize(),
-            ],
-            'oldest' => Media::orderBy('created_at', 'asc')->first(),
-            'newest' => Media::orderBy('created_at', 'desc')->first(),
-            'largest' => Media::orderBy('size', 'desc')->first(),
+            'total' => $media->count(),
+            'used' => $media->filter(fn($m) => $m->references->count() > 0)->count(),
+            'unused' => $media->filter(fn($m) => $m->references->count() === 0)->count(),
+            'by_collection' => $media->groupBy('collection_name')->map(function ($group, $collection) {
+                return [
+                    'collection' => $collection,
+                    'count' => $group->count(),
+                    'used' => $group->filter(fn($m) => $m->references->count() > 0)->count(),
+                    'unused' => $group->filter(fn($m) => $m->references->count() === 0)->count(),
+                    'total_size' => $group->sum('size'),
+                ];
+            })->values()->toArray(),
+            'most_used' => $media->sortByDesc(fn($m) => $m->references->count())->take(10)->values(),
         ];
+    }
+
+    /**
+     * Erstelle ZIP-Archiv aus Medien
+     */
+    public function createZipArchive(array $mediaIds, string $zipName): string
+    {
+        $zip = new \ZipArchive();
+        $zipPath = storage_path('app/temp/' . $zipName);
+
+        // Erstelle temp Verzeichnis falls nicht vorhanden
+        if (!is_dir(storage_path('app/temp'))) {
+            mkdir(storage_path('app/temp'), 0755, true);
+        }
+
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            throw new \Exception('Could not create ZIP archive');
+        }
+
+        $media = Media::whereIn('id', $mediaIds)->get();
+
+        foreach ($media as $mediaItem) {
+            $filePath = Storage::disk($mediaItem->disk)->path($mediaItem->path);
+            if (file_exists($filePath)) {
+                $zip->addFile($filePath, $mediaItem->file_name);
+            }
+        }
+
+        $zip->close();
+
+        return $zipPath;
     }
 }

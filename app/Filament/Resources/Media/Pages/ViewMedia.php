@@ -57,12 +57,6 @@ class ViewMedia extends ViewRecord
                             ->label('Speicher-Disk')
                             ->badge(),
 
-                        TextEntry::make('model_type')
-                            ->label('Verwendet von')
-                            ->formatStateUsing(fn($state) => $state ? class_basename($state) : 'Nicht zugeordnet')
-                            ->badge()
-                            ->color(fn($state) => $state ? 'success' : 'gray'),
-
                         TextEntry::make('created_at')
                             ->label('Hochgeladen am')
                             ->dateTime('d.m.Y H:i'),
@@ -88,10 +82,8 @@ class ViewMedia extends ViewRecord
                     ])
                     ->collapsible()
                     ->collapsed(function ($record) {
-                        // Collapsed wenn weder direkte Bindung noch Referenzen existieren
-                        $hasDirectBinding = $record->model_type && $record->model_id;
-                        $hasReferences = $record->references()->count() > 0;
-                        return !$hasDirectBinding && !$hasReferences;
+                        // Collapsed wenn keine Referenzen existieren
+                        return $record->references()->count() === 0;
                     }),
             ]);
     }

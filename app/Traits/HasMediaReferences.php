@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Traits;
 
+use App\Models\Media;
 use App\Models\MediaReference;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
  * Ermöglicht die Wiederverwendung von Medien aus der zentralen Mediathek.

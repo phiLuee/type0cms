@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Observers;
 
+use App\Models\Media;
 use App\Models\MediaReference;
 use App\Plugins\Blog\Models\Post;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class PostObserver
 {
@@ -36,7 +36,9 @@ class PostObserver
         $processedIds = [];
 
         foreach ($matches[1] as $filename) {
-            $media = Media::where('file_name', $filename)->first();
+            // Suche nach path (z.B. "media/01KEKVWHWJA09F1E0AY93ZJE9R.jpg")
+            $path = 'media/' . $filename;
+            $media = Media::where('path', $path)->first();
 
             if ($media && !in_array($media->id, $processedIds)) {
                 MediaReference::create([

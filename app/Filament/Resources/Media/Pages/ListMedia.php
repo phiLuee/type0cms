@@ -56,30 +56,20 @@ class ListMedia extends ListRecords
                         ->required(),
                 ])
                 ->action(function (array $data) {
+                    $mediaService = app(\App\Services\MediaService::class);
                     $uploaded = 0;
 
-                    foreach ($data['files'] as $file) {
-                        $path = \Illuminate\Support\Facades\Storage::disk('public')->path($file);
-
-                        if (file_exists($path)) {
-                            \App\Models\Media::create([
-                                'model_type' => null,
-                                'model_id' => null,
-                                'name' => pathinfo($file, PATHINFO_FILENAME),
-                                'file_name' => basename($file),
-                                'mime_type' => mime_content_type($path),
-                                'disk' => 'public',
-                                'collection_name' => $data['collection'],
-                                'size' => filesize($path),
-                                'manipulations' => '[]',
-                                'custom_properties' => '[]',
-                                'generated_conversions' => '[]',
-                                'responsive_images' => '[]',
-                                'uuid' => (string) \Illuminate\Support\Str::uuid(),
-                                'order_column' => 1,
-                            ]);
-
+                    foreach ($data['files'] as $filePath) {
+                        try {
+                            $mediaService->createFromExisting(
+                                sourcePath: $filePath,
+                                sourceDisk: 'public',
+                                collection: $data['collection'],
+                                originalName: basename($filePath)
+                            );
                             $uploaded++;
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::error('Media upload failed: ' . $e->getMessage());
                         }
                     }
 
@@ -124,24 +114,23 @@ class ListMedia extends ListRecords
                 ->color('info')
                 ->modalHeading('Medien-Statistiken')
                 ->modalContent(function () {
+                    $mediaService = app(\App\Services\MediaService::class);
+                    $stats = $mediaService->getStatistics();
+
                     $model = static::getResource()::getModel();
-                    $totalCount = $model::count();
-                    $totalSize = $model::sum('size');
                     $imageCount = $model::where('mime_type', 'like', 'image/%')->count();
                     $videoCount = $model::where('mime_type', 'like', 'video/%')->count();
                     $documentCount = $model::where('mime_type', 'like', 'application/%')->count();
-                    $unusedCount = $model::whereNull('model_type')->count();
-                    $unusedSize = $model::whereNull('model_type')->sum('size');
 
-                    return view('filament.components.media-statistics', compact(
-                        'totalCount',
-                        'totalSize',
-                        'imageCount',
-                        'videoCount',
-                        'documentCount',
-                        'unusedCount',
-                        'unusedSize'
-                    ));
+                    return view('filament.components.media-statistics', [
+                        'totalCount' => $stats['total_count'],
+                        'totalSize' => $stats['total_size'],
+                        'imageCount' => $imageCount,
+                        'videoCount' => $videoCount,
+                        'documentCount' => $documentCount,
+                        'unusedCount' => $stats['unused_count'],
+                        'unusedSize' => $stats['unused_size'],
+                    ]);
                 })
                 ->modalSubmitAction(false)
                 ->modalCancelActionLabel('Schließen'),
@@ -155,21 +144,12 @@ class ListMedia extends ListRecords
                 ->modalDescription('Löscht nur Medien, die weder an Models gebunden sind noch in Texten verwendet werden.')
                 ->action(function () {
                     $service = app(\App\Services\MediaService::class);
-                    $unusedMedia = $service->getTrulyUnusedMedia();
-                    $count = $unusedMedia->count();
-
-                    foreach ($unusedMedia as $media) {
-                        try {
-                            $media->delete();
-                        } catch (\Exception $e) {
-                            \Illuminate\Support\Facades\Log::error('Failed to delete media: ' . $e->getMessage());
-                        }
-                    }
+                    $count = $service->deleteUnusedMedia();
 
                     Notification::make()
                         ->success()
                         ->title('Aufräumen erfolgreich')
-                        ->body("{$count} wirklich ungenutzte Medien wurden gelöscht.")
+                        ->body("{$count} ungenutzte Medien wurden gelöscht.")
                         ->send();
                 }),
         ];
@@ -195,15 +175,12 @@ class ListMedia extends ListRecords
                 ->modifyQueryUsing(fn(Builder $query) => $query->where('mime_type', 'like', 'application/%'))
                 ->badge($model::where('mime_type', 'like', 'application/%')->count()),
 
-            'unused' => Tab::make('Wirklich ungenutzt')
+            'unused' => Tab::make('Ungenutzt')
                 ->modifyQueryUsing(
-                    fn(Builder $query) =>
-                    $query->whereNull('model_type')->whereDoesntHave('references')
+                    fn(Builder $query) => $query->whereDoesntHave('references')
                 )
                 ->badge(
-                    $model::whereNull('model_type')
-                        ->whereDoesntHave('references')
-                        ->count()
+                    $model::whereDoesntHave('references')->count()
                 )
                 ->badgeColor('danger'),
         ];

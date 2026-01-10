@@ -13,7 +13,6 @@ use Filament\Actions\ViewAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
 use App\Filament\Forms\Components\MediaRichEditor;
 use Filament\Forms\Components\TextInput;
@@ -105,14 +104,23 @@ class PostResource extends Resource
                                     ->label('Meta Beschreibung')
                                     ->rows(3)
                                     ->maxLength(160),
-                                SpatieMediaLibraryFileUpload::make('og_image')
+                                FileUpload::make('og_image')
                                     ->label('Social Media Bild (OG Image)')
-                                    ->collection('og_image')
                                     ->image()
                                     ->imageEditor()
-                                    ->responsiveImages()
-                                    ->conversion('og')
-                                    ->hint('Optimal: 1200x630px für Social Media'),
+                                    ->directory('temp-uploads')
+                                    ->maxSize(5120)
+                                    ->hint('Optimal: 1200x630px für Social Media')
+                                    ->helperText('Bild wird in die zentrale Mediathek übernommen')
+                                    ->afterStateHydrated(function (FileUpload $component, $state, $record) {
+                                        // Lade die URL aus MediaReference statt aus og_image Feld
+                                        if ($record && !$state) {
+                                            $media = $record->getFirstMedia('og_image');
+                                            if ($media) {
+                                                $component->state($media->getUrl());
+                                            }
+                                        }
+                                    }),
                                 Toggle::make('no_index')
                                     ->label('Nicht in Suchmaschinen anzeigen (noindex)'),
                             ])->collapsed(),
