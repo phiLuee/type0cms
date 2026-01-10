@@ -6,6 +6,7 @@ namespace App\Observers;
 
 use App\Models\SeoMetadata;
 use App\Services\MediaService;
+use Illuminate\Support\Facades\Log;
 
 class SeoObserver
 {
@@ -22,7 +23,7 @@ class SeoObserver
             // Prüfe ob es ein Livewire temporärer Upload ist
             $isLivewireTemp = str_contains($seo->og_image, 'livewire-tmp');
 
-            \Log::info('SeoObserver: og_image upload detected', [
+            Log::info('SeoObserver: og_image upload detected', [
                 'value' => $seo->og_image,
                 'is_livewire_temp' => $isLivewireTemp,
             ]);
@@ -54,7 +55,7 @@ class SeoObserver
         $uploadPath = self::$pendingUploads[$key];
         unset(self::$pendingUploads[$key]);
 
-        \Log::info('SeoObserver: Processing pending upload', ['path' => $uploadPath]);
+        Log::info('SeoObserver: Processing pending upload', ['path' => $uploadPath]);
 
         $mediaService = app(MediaService::class);
 
@@ -73,9 +74,9 @@ class SeoObserver
 
         if ($media) {
             $seo->attachMedia($media, 'og_image');
-            \Log::info('SeoObserver: Media attached', ['id' => $media->id]);
+            Log::info('SeoObserver: Media attached', ['id' => $media->id]);
         } else {
-            \Log::error('SeoObserver: moveFromTemporaryUpload returned null', ['path' => $uploadPath]);
+            Log::error('SeoObserver: moveFromTemporaryUpload returned null', ['path' => $uploadPath]);
         }
     }
 

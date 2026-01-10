@@ -10,13 +10,15 @@ class CreatePost extends CreateRecord
 {
     protected static string $resource = PostResource::class;
 
+    protected ?string $cachedOgImageUpload = null;
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $data['user_id'] = Auth::id();
 
         // Cache og_image Upload für afterCreate
         if (isset($data['seo']['og_image'])) {
-            $this->cachedOgImageUpload = $data['seo']['og_image'];
+            $this->cachedOgImageUpload = is_array($data['seo']['og_image']) ? ($data['seo']['og_image'][0] ?? null) : $data['seo']['og_image'];
             unset($data['seo']['og_image']);
         }
 
