@@ -3,10 +3,12 @@
 namespace App\Filament\Resources\Users\Schemas;
 
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class UserForm
 {
@@ -52,6 +54,19 @@ class UserForm
                             ->prefixIcon('heroicon-o-check-circle'),
                     ])
                     ->columns(2),
+
+                Section::make('Rollen & Berechtigungen')
+                    ->schema([
+                        Select::make('roles')
+                            ->label('Rollen')
+                            ->multiple()
+                            ->relationship('roles', 'name')
+                            ->preload()
+                            ->searchable()
+                            ->prefixIcon('heroicon-o-shield-check')
+                            ->helperText('Rollen bestimmen die Berechtigungen des Benutzers im System.'),
+                    ])
+                    ->columns(1),
             ]);
     }
 }
