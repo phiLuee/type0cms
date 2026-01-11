@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Plugins\Blog\Resources\TagResource;
 
+use App\Filament\Clusters\Blog;
 use App\Filament\Forms\SeoFormSchema;
 use App\Plugins\Blog\Models\Tag;
 use App\Plugins\Blog\Resources\TagResource\Pages;
@@ -26,9 +27,13 @@ class TagResource extends Resource
 {
     protected static ?string $model = Tag::class;
 
+    protected static string|UnitEnum|null $navigationGroup = 'Blog';
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-hashtag';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Blog';
+    protected static ?string $modelLabel = 'Tag';
+
+    protected static ?string $pluralModelLabel = 'Tags';
 
     protected static ?int $navigationSort = 2;
 

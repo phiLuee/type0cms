@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Plugins\Blog\Resources;
 
+use App\Filament\Clusters\Blog;
 use App\Filament\Forms\SeoFormSchema;
 use App\Plugins\Blog\Models\Post;
 use App\Plugins\Blog\Resources\PostResource\Pages;
@@ -30,9 +31,13 @@ class PostResource extends Resource
 {
     protected static ?string $model = Post::class;
 
+    protected static string|UnitEnum|null $navigationGroup = 'Blog';
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-document-text';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Blog';
+    protected static ?string $modelLabel = 'Beitrag';
+
+    protected static ?string $pluralModelLabel = 'Beiträge';
 
     public static function form(Schema $schema): Schema
     {
