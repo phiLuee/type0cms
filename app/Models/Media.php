@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
  */
 class Media extends Model
 {
-    protected $table = 'custom_media';
+    protected $table = 'media';
 
     protected $fillable = [
         'uuid',

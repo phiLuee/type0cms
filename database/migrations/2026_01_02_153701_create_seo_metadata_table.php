@@ -17,7 +17,7 @@ return new class extends Migration
 
             $table->string('meta_title')->nullable();
             $table->text('meta_description')->nullable();
-            $table->string('og_image')->nullable(); // Bild für Social Media (Facebook/Twitter)
+            // OG-Image wird über MediaReferences (HasMediaReferences Trait) verwaltet
             $table->boolean('no_index')->default(false); // Soll Google diese Seite ignorieren?
             $table->string('canonical_url')->nullable(); // Falls Duplicate Content vermieden werden soll
 

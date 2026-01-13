@@ -16,6 +16,8 @@ use Filament\Forms\Components\Select;
 use App\Filament\Forms\Components\MediaRichEditor;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\FileUpload;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
@@ -76,6 +78,41 @@ class PostResource extends Resource
                                             ->required()
                                             ->unique('blog_tags', 'slug'),
                                     ]),
+                                TextEntry::make('featured_image_preview')
+                                    ->label('Aktuelles Featured Image')
+                                    ->state(function ($record) {
+                                        if (!$record) {
+                                            return null;
+                                        }
+
+                                        $media = $record->getFirstMedia('featured_image');
+                                        if (!$media) {
+                                            return null;
+                                        }
+
+                                        return '<div style="margin-top: 0.5rem;">
+                                            <img src="' . e($media->getUrl()) . '" 
+                                                 style="max-width: 100%; max-height: 300px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" 
+                                                 alt="Featured Image" />
+                                            <p style="margin-top: 0.5rem; font-size: 0.875rem; color: #6b7280;">
+                                                ' . e($media->file_name) . ' (' . number_format($media->size / 1024, 2) . ' KB)
+                                            </p>
+                                        </div>';
+                                    })
+                                    ->html()
+                                    ->visible(fn($record) => $record && $record->getFirstMedia('featured_image'))
+                                    ->columnSpanFull(),
+                                FileUpload::make('featured_image')
+                                    ->label('Featured Image hochladen/ersetzen')
+                                    ->image()
+                                    ->imageEditor()
+                                    ->disk('public')
+                                    ->directory('livewire-tmp')
+                                    ->maxSize(5120)
+                                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                                    ->hint('Empfohlen: 16:9 Format')
+                                    ->helperText('Wird automatisch in die Mediathek übernommen')
+                                    ->columnSpanFull(),
                                 MediaRichEditor::make('content')
                                     ->label('Inhalt')
                                     ->toolbarButtons([

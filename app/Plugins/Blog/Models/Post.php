@@ -19,9 +19,22 @@ class Post extends Model
     protected $table = 'blog_posts';
     protected $guarded = [];
 
+    protected $fillable = [
+        'featured_image',
+    ];
+
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    /**
+     * Hilfsmethode für Featured Image URL
+     */
+    public function getFeaturedImageUrl(): ?string
+    {
+        $media = $this->getFirstMedia('featured_image');
+        return $media?->getUrl();
     }
 
     public function author(): BelongsTo
