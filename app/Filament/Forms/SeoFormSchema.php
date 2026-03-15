@@ -74,7 +74,7 @@ class SeoFormSchema
                     return null;
                 }
 
-                $ogMedia = $record->getFirstMedia('og_image');
+                $ogMedia = $record->seo?->getFirstMedia('og_image');
                 if (!$ogMedia) {
                     return null;
                 }
@@ -89,7 +89,7 @@ class SeoFormSchema
                 </div>';
             })
             ->html()
-            ->visible(fn($record) => $record && $record->getFirstMedia('og_image'));
+            ->visible(fn($record) => $record && $record->seo?->getFirstMedia('og_image'));
     }
 
     /**
@@ -110,9 +110,9 @@ class SeoFormSchema
                     return;
                 }
 
-                $ogMedia = $record->getFirstMedia('og_image');
+                $ogMedia = $record->seo?->getFirstMedia('og_image');
                 if ($ogMedia) {
-                    $record->detachMedia($ogMedia, 'og_image');
+                    $record->seo?->detachMedia($ogMedia, 'og_image');
 
                     // Optional: Media komplett löschen wenn nicht mehr verwendet
                     if ($ogMedia->references()->count() === 0) {
@@ -123,7 +123,7 @@ class SeoFormSchema
                 // Livewire Component neu laden
                 $livewire->dispatch('$refresh');
             })
-            ->visible(fn($record) => $record && $record->getFirstMedia('og_image'));
+            ->visible(fn($record) => $record && $record->seo?->getFirstMedia('og_image'));
     }
 
     /**
