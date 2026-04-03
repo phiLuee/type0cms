@@ -3,15 +3,16 @@
 namespace App\Plugins\Blog\Resources\PostResource\Pages;
 
 use App\Plugins\Blog\Resources\PostResource;
+use App\Services\MediaService;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
-use Illuminate\Support\Facades\Log;
 
 class EditPost extends EditRecord
 {
     protected static string $resource = PostResource::class;
 
     protected mixed $cachedOgImageUpload = null;
+    protected ?string $cachedFeaturedImageUpload = null;
 
     protected function getHeaderActions(): array
     {
@@ -22,27 +23,30 @@ class EditPost extends EditRecord
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        // Entferne og_image aus data, damit FileUpload leer startet
+        // Entferne og_image und featured_image aus data, damit FileUpload leer startet
         if (isset($data['seo'])) {
             unset($data['seo']['og_image']);
         }
+        unset($data['featured_image']);
 
         return $data;
     }
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        Log::info('EditPost: mutateFormDataBeforeSave', [
-            'has_seo' => isset($data['seo']),
-            'seo_keys' => isset($data['seo']) ? array_keys($data['seo']) : null,
-            'has_og_image' => isset($data['seo']['og_image']),
-            'og_image_value' => $data['seo']['og_image'] ?? null,
-        ]);
-
         // Cache og_image Upload für afterSave
         if (isset($data['seo']['og_image'])) {
             $this->cachedOgImageUpload = $data['seo']['og_image'];
             unset($data['seo']['og_image']);
+        }
+
+        // Cache featured_image Upload für afterSave
+        if (isset($data['featured_image'])) {
+            $value = is_array($data['featured_image']) ? ($data['featured_image'][0] ?? null) : $data['featured_image'];
+            if (is_string($value) && str_contains($value, 'livewire-tmp')) {
+                $this->cachedFeaturedImageUpload = $value;
+            }
+            unset($data['featured_image']);
         }
 
         return $data;
@@ -50,21 +54,40 @@ class EditPost extends EditRecord
 
     protected function afterSave(): void
     {
-        Log::info('EditPost: afterSave called', [
-            'has_cached' => isset($this->cachedOgImageUpload),
-            'cached_value' => $this->cachedOgImageUpload ?? 'NOT SET',
-        ]);
+        $mediaService = app(MediaService::class);
 
         // Verarbeite OG Image Upload via Model-Methode
         if (isset($this->cachedOgImageUpload)) {
-            Log::info('EditPost: Calling handleSeoOgImageUpload');
-
-            $result = $this->record->handleSeoOgImageUpload(
+            $this->record->handleSeoOgImageUpload(
                 $this->cachedOgImageUpload,
                 'Post OG Image: ' . $this->record->title
             );
+        }
 
-            Log::info('EditPost: handleSeoOgImageUpload result', ['success' => $result]);
+        // Verarbeite Featured Image Upload
+        if ($this->cachedFeaturedImageUpload) {
+            // Entferne alte Referenz
+            $oldMedia = $this->record->getFirstMedia('featured_image');
+            if ($oldMedia) {
+                $this->record->detachMedia($oldMedia, 'featured_image');
+            }
+
+            $media = $mediaService->moveFromTemporaryUpload(
+                $this->cachedFeaturedImageUpload,
+                'media',
+                null,
+                'public'
+            );
+            $this->record->attachMedia($media, 'featured_image');
+        }
+
+        // Content-Medien synchronisieren
+        if ($this->record->content) {
+            $mediaService->syncContentMedia(
+                $this->record,
+                $this->record->content,
+                'content'
+            );
         }
     }
 }

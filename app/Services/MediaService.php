@@ -38,7 +38,7 @@ class MediaService
             'image/png',
             'image/gif',
             'image/webp',
-            'image/svg+xml',
+
             // Documents
             'application/pdf',
             'application/msword',
@@ -233,12 +233,23 @@ class MediaService
         ?string $description = null,
         string $sourceDisk = 'public'
     ): Media {
-        return $this->createFromExisting(
+        $originalName = basename($temporaryPath);
+
+        $media = $this->createFromExisting(
             $temporaryPath,
             $sourceDisk,
             $collection,
-            $description ?? basename($temporaryPath)
+            $originalName
         );
+
+        // Beschreibung separat in Metadata speichern
+        if ($description) {
+            $media->update([
+                'metadata' => array_merge($media->metadata ?? [], ['description' => $description]),
+            ]);
+        }
+
+        return $media;
     }
 
     /**
@@ -337,20 +348,24 @@ class MediaService
      */
     public function findDuplicates(): array
     {
-        $media = Media::all();
+        // Finde Duplikate per SQL statt alle Zeilen in den Speicher zu laden
+        $duplicateKeys = Media::query()
+            ->selectRaw('size, name, COUNT(*) as cnt')
+            ->groupBy('size', 'name')
+            ->havingRaw('COUNT(*) > 1')
+            ->get();
+
+        if ($duplicateKeys->isEmpty()) {
+            return [];
+        }
+
         $duplicates = [];
-
-        $grouped = $media->groupBy(function ($item) {
-            return $item->size . '_' . $item->name;
-        });
-
-        foreach ($grouped as $key => $group) {
-            if ($group->count() > 1) {
-                $duplicates[] = [
-                    'key' => $key,
-                    'media' => $group,
-                ];
-            }
+        foreach ($duplicateKeys as $dup) {
+            $group = Media::where('size', $dup->size)->where('name', $dup->name)->get();
+            $duplicates[] = [
+                'key' => $dup->size . '_' . $dup->name,
+                'media' => $group,
+            ];
         }
 
         return $duplicates;

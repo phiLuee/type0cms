@@ -131,7 +131,6 @@ class PostResource extends Resource
                                         'redo',
                                     ])
                                     ->columnSpanFull(),
-                                Toggle::make('is_published'),
                             ]),
                         SeoFormSchema::make(),
                     ])->columnSpan(['lg' => 2]),

@@ -17,11 +17,31 @@ class Post extends Model
     use HasMediaReferences;
 
     protected $table = 'blog_posts';
-    protected $guarded = [];
+
+    protected $fillable = [
+        'user_id',
+        'blog_category_id',
+        'title',
+        'slug',
+        'excerpt',
+        'content',
+        'is_published',
+        'published_at',
+    ];
 
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    /**
+     * Route-Model-Binding: nur veröffentlichte Posts im Frontend auflösen
+     */
+    public function resolveRouteBinding($value, $field = null): ?self
+    {
+        return $this->where($field ?? $this->getRouteKeyName(), $value)
+            ->where('is_published', true)
+            ->firstOrFail();
     }
 
     /**

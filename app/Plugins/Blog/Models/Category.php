@@ -13,7 +13,11 @@ class Category extends Model
     use HasSeoMetadata;
 
     protected $table = 'blog_categories';
-    protected $guarded = [];
+
+    protected $fillable = [
+        'name',
+        'slug',
+    ];
 
     public function getRouteKeyName(): string
     {
