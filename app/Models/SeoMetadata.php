@@ -25,6 +25,22 @@ class SeoMetadata extends Model
         'no_index' => 'boolean',
     ];
 
+    protected static function booted(): void
+    {
+        // og_image ist keine DB-Spalte – sicherheitshalber vor dem Speichern entfernen
+        static::saving(function (SeoMetadata $seo) {
+            unset($seo->og_image);
+        });
+
+        // Media-Attachments aufräumen wenn SeoMetadata gelöscht wird
+        static::deleting(function (SeoMetadata $seo) {
+            $ogImage = $seo->getFirstMedia('og_image');
+            if ($ogImage) {
+                $seo->detachMedia($ogImage, 'og_image');
+            }
+        });
+    }
+
     public function model(): MorphTo
     {
         return $this->morphTo();

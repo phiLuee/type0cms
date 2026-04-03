@@ -2,8 +2,6 @@
 
 namespace App\Providers;
 
-use App\Observers\SeoObserver;
-use App\Models\SeoMetadata;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -21,6 +19,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        SeoMetadata::observe(SeoObserver::class);
+        //
     }
 }
