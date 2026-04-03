@@ -19,10 +19,6 @@ class Post extends Model
     protected $table = 'blog_posts';
     protected $guarded = [];
 
-    protected $fillable = [
-        'featured_image',
-    ];
-
     public function getRouteKeyName(): string
     {
         return 'slug';
