@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f62b8c950c15846125ca4f3058445d75",
+    "content-hash": "3ce0525b20c781cd4afffd87890929bf",
     "packages": [
         {
             "name": "bezhansalleh/filament-plugin-essentials",
@@ -8045,6 +8045,113 @@
             "time": "2025-12-02T11:56:42+00:00"
         },
         {
+            "name": "type0/blog",
+            "version": "dev-dev",
+            "dist": {
+                "type": "path",
+                "url": "packages/blog",
+                "reference": "844bc775edc6e4b48aa75a5706f5b699c26521e9"
+            },
+            "require": {
+                "filament/filament": "^5.0",
+                "illuminate/support": "^13.0",
+                "php": "^8.2",
+                "type0/media": "*"
+            },
+            "suggest": {
+                "type0/seo": "Adds SEO metadata support to blog posts, categories and tags"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Type0\\Blog\\BlogServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Type0\\Blog\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Blog Plugin für Laravel + Filament mit Mediathek-Integration",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "type0/media",
+            "version": "dev-dev",
+            "dist": {
+                "type": "path",
+                "url": "packages/media",
+                "reference": "cbcba0e154d16c9f3a8a3b0fdd2733448c280997"
+            },
+            "require": {
+                "filament/filament": "^5.0",
+                "illuminate/support": "^13.0",
+                "php": "^8.2"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Type0\\Media\\MediaServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Type0\\Media\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Zentrale Mediathek für Laravel + Filament",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "type0/seo",
+            "version": "dev-dev",
+            "dist": {
+                "type": "path",
+                "url": "packages/seo",
+                "reference": "85590ce56830651749ff443672d3dcd32fdffedb"
+            },
+            "require": {
+                "filament/filament": "^5.0",
+                "illuminate/support": "^13.0",
+                "php": "^8.2",
+                "type0/media": "*"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Type0\\Seo\\SeoServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Type0\\Seo\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "SEO-Metadaten Modul mit OG-Image Support via type0/media",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "ueberdosis/tiptap-php",
             "version": "2.1.0",
             "source": {
@@ -12094,7 +12201,7 @@
         }
     ],
     "aliases": [],
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
     "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,

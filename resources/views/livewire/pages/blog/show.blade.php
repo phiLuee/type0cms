@@ -1,6 +1,6 @@
 <?php
 
-use App\Plugins\Blog\Models\Post;
+use Type0\Blog\Models\Post;
 use function Livewire\Volt\{layout, state, mount};
 
 layout('components.layouts.app');

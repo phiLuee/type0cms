@@ -51,10 +51,12 @@
     47 => 'Termwind\\Laravel\\TermwindServiceProvider',
     48 => 'RyanChandler\\BladeCaptureDirective\\BladeCaptureDirectiveServiceProvider',
     49 => 'Spatie\\Permission\\PermissionServiceProvider',
-    50 => 'App\\Plugins\\Blog\\BlogServiceProvider',
-    51 => 'App\\Providers\\AppServiceProvider',
-    52 => 'App\\Providers\\Filament\\AdminPanelProvider',
-    53 => 'App\\Providers\\VoltServiceProvider',
+    50 => 'Type0\\Blog\\BlogServiceProvider',
+    51 => 'Type0\\Media\\MediaServiceProvider',
+    52 => 'Type0\\Seo\\SeoServiceProvider',
+    53 => 'App\\Providers\\AppServiceProvider',
+    54 => 'App\\Providers\\Filament\\AdminPanelProvider',
+    55 => 'App\\Providers\\VoltServiceProvider',
   ),
   'eager' => 
   array (
@@ -92,10 +94,12 @@
     31 => 'Termwind\\Laravel\\TermwindServiceProvider',
     32 => 'RyanChandler\\BladeCaptureDirective\\BladeCaptureDirectiveServiceProvider',
     33 => 'Spatie\\Permission\\PermissionServiceProvider',
-    34 => 'App\\Plugins\\Blog\\BlogServiceProvider',
-    35 => 'App\\Providers\\AppServiceProvider',
-    36 => 'App\\Providers\\Filament\\AdminPanelProvider',
-    37 => 'App\\Providers\\VoltServiceProvider',
+    34 => 'Type0\\Blog\\BlogServiceProvider',
+    35 => 'Type0\\Media\\MediaServiceProvider',
+    36 => 'Type0\\Seo\\SeoServiceProvider',
+    37 => 'App\\Providers\\AppServiceProvider',
+    38 => 'App\\Providers\\Filament\\AdminPanelProvider',
+    39 => 'App\\Providers\\VoltServiceProvider',
   ),
   'deferred' => 
   array (

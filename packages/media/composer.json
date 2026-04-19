@@ -1,0 +1,25 @@
+{
+    "name": "type0/media",
+    "description": "Zentrale Mediathek für Laravel + Filament",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Type0\\Media\\": "src/"
+        }
+    },
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^13.0",
+        "filament/filament": "^5.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Type0\\Media\\MediaServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

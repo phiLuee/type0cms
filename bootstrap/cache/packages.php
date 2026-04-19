@@ -204,4 +204,25 @@
       0 => 'Spatie\\Permission\\PermissionServiceProvider',
     ),
   ),
+  'type0/blog' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Type0\\Blog\\BlogServiceProvider',
+    ),
+  ),
+  'type0/media' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Type0\\Media\\MediaServiceProvider',
+    ),
+  ),
+  'type0/seo' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Type0\\Seo\\SeoServiceProvider',
+    ),
+  ),
 );

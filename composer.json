@@ -5,6 +5,11 @@
     "description": "The skeleton application for the Laravel framework.",
     "keywords": ["laravel", "framework"],
     "license": "MIT",
+    "repositories": [
+        { "type": "path", "url": "packages/media" },
+        { "type": "path", "url": "packages/seo" },
+        { "type": "path", "url": "packages/blog" }
+    ],
     "require": {
         "php": "^8.2",
         "bezhansalleh/filament-shield": "^4.0",
@@ -12,7 +17,10 @@
         "laravel/framework": "^13.0",
         "laravel/tinker": "^3.0",
         "livewire/livewire": "*",
-        "livewire/volt": "*"
+        "livewire/volt": "*",
+        "type0/media": "*",
+        "type0/seo": "*",
+        "type0/blog": "*"
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^4.2.6",
@@ -89,6 +97,6 @@
             "php-http/discovery": true
         }
     },
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
     "prefer-stable": true
 }

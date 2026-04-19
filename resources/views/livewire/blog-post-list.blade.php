@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Plugins\Blog\Models\Post;
+use Type0\Blog\Models\Post;
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
 
