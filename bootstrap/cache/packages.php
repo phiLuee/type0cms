@@ -1,20 +1,13 @@
 <?php return array (
-  'anourvalar/eloquent-serialize' => 
-  array (
-    'aliases' => 
-    array (
-      'EloquentSerialize' => 'AnourValar\\EloquentSerialize\\Facades\\EloquentSerializeFacade',
-    ),
-  ),
   'barryvdh/laravel-debugbar' => 
   array (
     'aliases' => 
     array (
-      'Debugbar' => 'Barryvdh\\Debugbar\\Facades\\Debugbar',
+      'Debugbar' => 'Fruitcake\\LaravelDebugbar\\Facades\\Debugbar',
     ),
     'providers' => 
     array (
-      0 => 'Barryvdh\\Debugbar\\ServiceProvider',
+      0 => 'Fruitcake\\LaravelDebugbar\\ServiceProvider',
     ),
   ),
   'barryvdh/laravel-ide-helper' => 
