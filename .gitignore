@@ -39,3 +39,5 @@ yarn-error.log
 /.idea
 /.vscode
 *.DS_Store
+_ide_helper.php
+_ide_helper_models.php
