@@ -2,6 +2,7 @@
 
 namespace Type0\Blog\Filament\Resources\PostResource\Pages;
 
+use Type0\Blog\BlogExtensionManager;
 use Type0\Media\Contracts\MediaServiceInterface;
 use Type0\Blog\Filament\Resources\PostResource;
 use Filament\Actions;
@@ -11,7 +12,6 @@ class EditPost extends EditRecord
 {
     protected static string $resource = PostResource::class;
 
-    protected mixed $cachedOgImageUpload = null;
     protected ?string $cachedFeaturedImageUpload = null;
 
     protected function getMediaService(): MediaServiceInterface
@@ -28,9 +28,8 @@ class EditPost extends EditRecord
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        if (isset($data['seo'])) {
-            unset($data['seo']['og_image']);
-        }
+        $data = app(BlogExtensionManager::class)->mutateFormDataBeforeFill($data);
+
         unset($data['featured_image']);
 
         return $data;
@@ -38,10 +37,7 @@ class EditPost extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        if (isset($data['seo']['og_image'])) {
-            $this->cachedOgImageUpload = $data['seo']['og_image'];
-            unset($data['seo']['og_image']);
-        }
+        $data = app(BlogExtensionManager::class)->mutateFormDataBeforeSave($data);
 
         if (isset($data['featured_image'])) {
             $value = is_array($data['featured_image']) ? ($data['featured_image'][0] ?? null) : $data['featured_image'];
@@ -56,13 +52,7 @@ class EditPost extends EditRecord
 
     protected function afterSave(): void
     {
-        // Verarbeite OG Image Upload (nur wenn SEO-Package installiert)
-        if (isset($this->cachedOgImageUpload) && method_exists($this->record, 'handleSeoOgImageUpload')) {
-            $this->record->handleSeoOgImageUpload(
-                $this->cachedOgImageUpload,
-                'Post OG Image: ' . $this->record->title
-            );
-        }
+        app(BlogExtensionManager::class)->afterSave($this->record);
 
         if ($this->cachedFeaturedImageUpload) {
             $oldMedia = $this->record->getFirstMedia('featured_image');

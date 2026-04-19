@@ -13,6 +13,8 @@ class BlogServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/blog.php', 'blog');
+
+        $this->app->singleton(BlogExtensionManager::class);
     }
 
     public function boot(): void
@@ -22,7 +24,7 @@ class BlogServiceProvider extends ServiceProvider
 
         Post::observe(PostObserver::class);
 
-        $this->registerSeoRelationships();
+        $this->app->booted(fn () => $this->discoverAndRegisterExtensions());
 
         $this->publishes([
             __DIR__ . '/../config/blog.php' => config_path('blog.php'),
@@ -30,18 +32,42 @@ class BlogServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register SEO relationships on Blog models when the SEO package is installed.
+     * Discover extensions and register them.
+     *
+     * Built-in extensions (e.g. SEO) are registered automatically when their
+     * package is installed. Third-party packages can tag their BlogExtension
+     * implementations with 'blog.extensions' to be discovered here.
      */
-    protected function registerSeoRelationships(): void
+    protected function discoverAndRegisterExtensions(): void
     {
-        if (! class_exists(\Type0\Seo\Models\SeoMetadata::class)) {
-            return;
+        $manager = $this->app->make(BlogExtensionManager::class);
+
+        // Register built-in optional extensions
+        $this->registerBuiltInExtensions($manager);
+
+        // Register third-party extensions via container tagging
+        foreach ($this->app->tagged('blog.extensions') as $extension) {
+            $manager->register($extension);
         }
 
         foreach ([Post::class, Category::class, Tag::class] as $modelClass) {
-            $modelClass::resolveRelationUsing('seo', function ($model) {
-                return $model->morphOne(\Type0\Seo\Models\SeoMetadata::class, 'model');
-            });
+            $manager->registerRelationships($modelClass);
+        }
+    }
+
+    /**
+     * Register built-in optional extensions based on installed packages.
+     */
+    protected function registerBuiltInExtensions(BlogExtensionManager $manager): void
+    {
+        $builtIn = [
+            \Type0\Seo\Models\SeoMetadata::class => Extensions\SeoExtension::class,
+        ];
+
+        foreach ($builtIn as $detector => $extension) {
+            if (class_exists($detector)) {
+                $manager->register(new $extension());
+            }
         }
     }
 }

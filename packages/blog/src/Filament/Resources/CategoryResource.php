@@ -16,6 +16,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Resources\Resource;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
+use Type0\Blog\BlogExtensionManager;
 use BackedEnum;
 use UnitEnum;
 
@@ -39,10 +40,7 @@ class CategoryResource extends Resource
                             ->afterStateUpdated(fn($state, callable $set) => $set('slug', Str::slug($state))),
                         TextInput::make('slug')->required()->unique(ignoreRecord: true),
                     ]),
-                // SEO nur wenn installiert
-                class_exists(\Type0\Seo\Filament\Forms\SeoFormSchema::class)
-                    ? \Type0\Seo\Filament\Forms\SeoFormSchema::make()
-                    : null,
+                ...app(BlogExtensionManager::class)->formSchema(),
             ]));
     }
 

@@ -18,6 +18,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Actions\DeleteBulkAction;
 use Illuminate\Support\Str;
+use Type0\Blog\BlogExtensionManager;
 use BackedEnum;
 use UnitEnum;
 
@@ -52,10 +53,7 @@ class TagResource extends Resource
                             ->label('Farbe (optional)')
                             ->helperText('Wird für die Darstellung von Tag-Badges verwendet'),
                     ]),
-                // SEO nur wenn installiert
-                class_exists(\Type0\Seo\Filament\Forms\SeoFormSchema::class)
-                    ? \Type0\Seo\Filament\Forms\SeoFormSchema::make()
-                    : null,
+                ...app(BlogExtensionManager::class)->formSchema(),
             ]));
     }
 

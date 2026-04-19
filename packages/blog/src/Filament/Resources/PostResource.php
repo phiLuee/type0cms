@@ -24,6 +24,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
+use Type0\Blog\BlogExtensionManager;
 use UnitEnum;
 
 class PostResource extends Resource
@@ -129,10 +130,7 @@ class PostResource extends Resource
                                     ])
                                     ->columnSpanFull(),
                             ]),
-                        // SEO-Section nur wenn SEO-Package installiert ist
-                        class_exists(\Type0\Seo\Filament\Forms\SeoFormSchema::class)
-                            ? \Type0\Seo\Filament\Forms\SeoFormSchema::make()
-                            : null,
+                        ...app(BlogExtensionManager::class)->formSchema(),
                     ]))->columnSpan(['lg' => 2]),
                 Group::make()
                     ->schema([

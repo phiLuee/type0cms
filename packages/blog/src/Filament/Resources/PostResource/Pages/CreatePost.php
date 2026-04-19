@@ -2,6 +2,7 @@
 
 namespace Type0\Blog\Filament\Resources\PostResource\Pages;
 
+use Type0\Blog\BlogExtensionManager;
 use Type0\Media\Contracts\MediaServiceInterface;
 use Type0\Blog\Filament\Resources\PostResource;
 use Filament\Resources\Pages\CreateRecord;
@@ -11,7 +12,6 @@ class CreatePost extends CreateRecord
 {
     protected static string $resource = PostResource::class;
 
-    protected ?string $cachedOgImageUpload = null;
     protected ?string $cachedFeaturedImageUpload = null;
 
     protected function getMediaService(): MediaServiceInterface
@@ -23,10 +23,7 @@ class CreatePost extends CreateRecord
     {
         $data['user_id'] = Auth::id();
 
-        if (isset($data['seo']['og_image'])) {
-            $this->cachedOgImageUpload = is_array($data['seo']['og_image']) ? ($data['seo']['og_image'][0] ?? null) : $data['seo']['og_image'];
-            unset($data['seo']['og_image']);
-        }
+        $data = app(BlogExtensionManager::class)->mutateFormDataBeforeSave($data);
 
         if (isset($data['featured_image'])) {
             $value = is_array($data['featured_image']) ? ($data['featured_image'][0] ?? null) : $data['featured_image'];
@@ -41,13 +38,7 @@ class CreatePost extends CreateRecord
 
     protected function afterCreate(): void
     {
-        // Verarbeite OG Image Upload (nur wenn SEO-Package installiert)
-        if (isset($this->cachedOgImageUpload) && method_exists($this->record, 'handleSeoOgImageUpload')) {
-            $this->record->handleSeoOgImageUpload(
-                $this->cachedOgImageUpload,
-                'Post OG Image: ' . $this->record->title
-            );
-        }
+        app(BlogExtensionManager::class)->afterSave($this->record);
 
         if ($this->cachedFeaturedImageUpload) {
             $media = $this->getMediaService()->moveFromTemporaryUpload(
