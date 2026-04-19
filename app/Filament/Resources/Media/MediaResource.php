@@ -17,8 +17,8 @@ use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Actions\DeleteAction;
+use App\Contracts\MediaServiceInterface;
 use App\Models\Media;
-use App\Services\MediaService;
 use BackedEnum;
 use UnitEnum;
 
@@ -327,7 +327,7 @@ class MediaResource extends Resource
                         ->modalHeading('Medien herunterladen')
                         ->modalDescription('Möchten Sie die ausgewählten Medien als ZIP-Archiv herunterladen?')
                         ->action(function ($records) {
-                            $service = app(MediaService::class);
+                            $service = app(MediaServiceInterface::class);
                             $zipPath = $service->createZipArchive(
                                 $records->pluck('id')->toArray(),
                                 'media-export-' . now()->format('Y-m-d-H-i-s') . '.zip'

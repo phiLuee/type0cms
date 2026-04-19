@@ -21,11 +21,12 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use ZipArchive;
+use App\Contracts\MediaServiceInterface;
 
 /**
  * Service für Upload, Verwaltung, Referenzierung und Löschung von Medien
  */
-class MediaService
+class MediaService implements MediaServiceInterface
 {
     /**
      * Erlaubte MIME-Typen für Sicherheit

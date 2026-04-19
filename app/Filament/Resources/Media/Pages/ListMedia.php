@@ -56,7 +56,7 @@ class ListMedia extends ListRecords
                         ->required(),
                 ])
                 ->action(function (array $data) {
-                    $mediaService = app(\App\Services\MediaService::class);
+                    $mediaService = app(\App\Contracts\MediaServiceInterface::class);
                     $uploaded = 0;
 
                     foreach ($data['files'] as $filePath) {
@@ -86,7 +86,7 @@ class ListMedia extends ListRecords
                 ->color('warning')
                 ->modalHeading('Duplizierte Medien')
                 ->modalContent(function () {
-                    $service = app(\App\Services\MediaService::class);
+                    $service = app(\App\Contracts\MediaServiceInterface::class);
                     $duplicates = $service->findDuplicates();
 
                     return view('filament.components.media-duplicates', compact('duplicates'));
@@ -100,7 +100,7 @@ class ListMedia extends ListRecords
                 ->color('info')
                 ->modalHeading('Medien-Nutzungsbericht')
                 ->modalContent(function () {
-                    $service = app(\App\Services\MediaService::class);
+                    $service = app(\App\Contracts\MediaServiceInterface::class);
                     $report = $service->generateUsageReport();
 
                     return view('filament.components.media-report', compact('report'));
@@ -114,7 +114,7 @@ class ListMedia extends ListRecords
                 ->color('info')
                 ->modalHeading('Medien-Statistiken')
                 ->modalContent(function () {
-                    $mediaService = app(\App\Services\MediaService::class);
+                    $mediaService = app(\App\Contracts\MediaServiceInterface::class);
                     $stats = $mediaService->getStatistics();
 
                     $model = static::getResource()::getModel();
@@ -143,7 +143,7 @@ class ListMedia extends ListRecords
                 ->modalHeading('Wirklich ungenutzte Medien löschen')
                 ->modalDescription('Löscht nur Medien, die weder an Models gebunden sind noch in Texten verwendet werden.')
                 ->action(function () {
-                    $service = app(\App\Services\MediaService::class);
+                    $service = app(\App\Contracts\MediaServiceInterface::class);
                     $count = $service->deleteUnusedMedia();
 
                     Notification::make()

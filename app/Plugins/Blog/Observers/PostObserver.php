@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Plugins\Blog\Observers;
 
+use App\Contracts\MediaServiceInterface;
 use App\Plugins\Blog\Models\Post;
-use App\Services\MediaService;
 
 class PostObserver
 {
     public function __construct(
-        private MediaService $mediaService
+        private MediaServiceInterface $mediaService
     ) {}
 
     /**

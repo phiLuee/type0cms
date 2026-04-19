@@ -2,8 +2,8 @@
 
 namespace App\Plugins\Blog\Resources\PostResource\Pages;
 
+use App\Contracts\MediaServiceInterface;
 use App\Plugins\Blog\Resources\PostResource;
-use App\Services\MediaService;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
@@ -13,6 +13,10 @@ class EditPost extends EditRecord
 
     protected mixed $cachedOgImageUpload = null;
     protected ?string $cachedFeaturedImageUpload = null;
+
+    public function __construct(
+        private readonly MediaServiceInterface $mediaService,
+    ) {}
 
     protected function getHeaderActions(): array
     {
@@ -54,8 +58,6 @@ class EditPost extends EditRecord
 
     protected function afterSave(): void
     {
-        $mediaService = app(MediaService::class);
-
         // Verarbeite OG Image Upload via Model-Methode
         if (isset($this->cachedOgImageUpload)) {
             $this->record->handleSeoOgImageUpload(
@@ -72,7 +74,7 @@ class EditPost extends EditRecord
                 $this->record->detachMedia($oldMedia, 'featured_image');
             }
 
-            $media = $mediaService->moveFromTemporaryUpload(
+            $media = $this->mediaService->moveFromTemporaryUpload(
                 $this->cachedFeaturedImageUpload,
                 'media',
                 null,
@@ -83,7 +85,7 @@ class EditPost extends EditRecord
 
         // Content-Medien synchronisieren
         if ($this->record->content) {
-            $mediaService->syncContentMedia(
+            $this->mediaService->syncContentMedia(
                 $this->record,
                 $this->record->content,
                 'content'

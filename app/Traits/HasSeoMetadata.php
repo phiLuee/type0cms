@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Traits;
 
+use App\Contracts\MediaServiceInterface;
 use App\Models\SeoMetadata;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
@@ -67,7 +68,12 @@ trait HasSeoMetadata
             $this->seo()->create([]);
         }
 
-        $mediaService = app(\App\Services\MediaService::class);
+        // Prüfe ob MediaService verfügbar ist (optionale Abhängigkeit)
+        if (!app()->bound(MediaServiceInterface::class)) {
+            return false;
+        }
+
+        $mediaService = app(MediaServiceInterface::class);
 
         // Wenn Array und leer = Bild wurde gelöscht
         if (is_array($uploadedPath) && count($uploadedPath) === 0) {
